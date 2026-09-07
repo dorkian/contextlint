@@ -14,6 +14,7 @@ SKIP_DIRS = {
     ".git", "node_modules", ".venv", "venv", "__pycache__", "dist", "build",
     ".next", ".nuxt", "target", ".tox", ".mypy_cache", ".pytest_cache",
     "site-packages", ".terraform", "vendor", ".gradle", "Pods",
+    "Library", ".Trash", ".cache",
 }
 
 MAX_WALK_DEPTH = 6

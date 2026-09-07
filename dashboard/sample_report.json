@@ -1,0 +1,355 @@
+{
+  "meta": {
+    "version": "0.1.0",
+    "project": "/Users/ashkan/Documents/projects/contextlint",
+    "home": "/Users/ashkan",
+    "include_global": false,
+    "assistants_detected": [
+      "codex"
+    ],
+    "tokenizer": "heuristic",
+    "tokenizer_exact": false,
+    "mcp_probed": false,
+    "policy": {
+      "context_window": 200000,
+      "always_on_warn_ratio": 0.05,
+      "always_on_fail_ratio": 0.15,
+      "top_cost_min_tokens": 400,
+      "max_description_chars": 500,
+      "max_body_tokens": 8000,
+      "min_body_chars": 200,
+      "duplicate_similarity": 0.85,
+      "stale_days": 60,
+      "per_tool_tokens_low": 300,
+      "per_tool_tokens_high": 600
+    },
+    "usage": {
+      "available": true,
+      "sessions": 151,
+      "lines": 2654,
+      "span_days": 16.5,
+      "first_seen": "2026-08-21T19:51:12.066Z",
+      "last_seen": "2026-09-07T08:49:43.784Z",
+      "distinct_skills_invoked": 32,
+      "skills": {
+        "dataviz": {
+          "count": 2,
+          "last_used": "2026-09-07T08:09:29.605Z",
+          "first_used": "2026-09-07T08:09:29.605Z"
+        },
+        "Explore": {
+          "count": 3,
+          "last_used": "2026-08-22T14:58:34.145Z",
+          "first_used": "2026-08-22T14:58:14.795Z"
+        },
+        "Plan": {
+          "count": 1,
+          "last_used": "2026-08-22T15:15:15.097Z",
+          "first_used": "2026-08-22T15:15:15.097Z"
+        },
+        "general-purpose": {
+          "count": 35,
+          "last_used": "2026-08-24T15:24:48.589Z",
+          "first_used": "2026-08-21T19:51:12.066Z"
+        },
+        "no-ai-slop": {
+          "count": 24,
+          "last_used": "2026-09-03T17:38:16.409Z",
+          "first_used": "2026-08-25T20:31:52.767Z"
+        },
+        "artifact-design": {
+          "count": 3,
+          "last_used": "2026-08-29T23:20:16.085Z",
+          "first_used": "2026-08-25T06:21:04.592Z"
+        },
+        "artifact-capabilities": {
+          "count": 1,
+          "last_used": "2026-08-29T23:20:44.418Z",
+          "first_used": "2026-08-29T23:20:44.418Z"
+        },
+        "spec": {
+          "count": 1,
+          "last_used": "2026-08-24T17:12:58.518Z",
+          "first_used": "2026-08-24T17:12:58.518Z"
+        },
+        "code-review": {
+          "count": 2,
+          "last_used": "2026-08-24T19:56:01.102Z",
+          "first_used": "2026-08-24T19:56:01.102Z"
+        },
+        "job": {
+          "count": 9,
+          "last_used": "2026-09-06T08:34:33.898Z",
+          "first_used": "2026-08-24T09:29:12.550Z"
+        },
+        "cv-humanizer": {
+          "count": 15,
+          "last_used": "2026-09-04T16:23:02.207Z",
+          "first_used": "2026-08-24T10:00:39.015Z"
+        },
+        "cv-reviewer": {
+          "count": 8,
+          "last_used": "2026-09-04T16:26:55.449Z",
+          "first_used": "2026-08-24T10:02:35.936Z"
+        },
+        "find-hiring-manager": {
+          "count": 7,
+          "last_used": "2026-09-04T16:29:33.002Z",
+          "first_used": "2026-08-25T20:32:07.184Z"
+        },
+        "lettering-planning": {
+          "count": 2,
+          "last_used": "2026-08-26T22:16:49.620Z",
+          "first_used": "2026-08-24T19:58:16.916Z"
+        },
+        "sound-design": {
+          "count": 2,
+          "last_used": "2026-08-26T22:20:13.381Z",
+          "first_used": "2026-08-24T20:04:11.250Z"
+        },
+        "hyperframes-build": {
+          "count": 2,
+          "last_used": "2026-08-26T22:24:24.353Z",
+          "first_used": "2026-08-24T20:09:31.997Z"
+        },
+        "hyperframes-timing": {
+          "count": 2,
+          "last_used": "2026-08-26T22:29:49.122Z",
+          "first_used": "2026-08-24T20:15:00.713Z"
+        },
+        "video-render": {
+          "count": 2,
+          "last_used": "2026-08-26T22:34:05.249Z",
+          "first_used": "2026-08-24T20:25:04.050Z"
+        },
+        "publisher": {
+          "count": 1,
+          "last_used": "2026-08-25T06:10:45.492Z",
+          "first_used": "2026-08-25T06:10:45.492Z"
+        },
+        "story-producer": {
+          "count": 2,
+          "last_used": "2026-08-26T11:27:46.914Z",
+          "first_used": "2026-08-26T11:05:40.922Z"
+        },
+        "continuity-auditor": {
+          "count": 1,
+          "last_used": "2026-08-26T11:30:43.898Z",
+          "first_used": "2026-08-26T11:30:43.898Z"
+        },
+        "humanizer": {
+          "count": 4,
+          "last_used": "2026-09-02T07:16:03.728Z",
+          "first_used": "2026-08-26T11:34:59.088Z"
+        },
+        "image-pipeline": {
+          "count": 1,
+          "last_used": "2026-08-26T14:14:36.279Z",
+          "first_used": "2026-08-26T14:14:36.279Z"
+        },
+        "gemini-app-image": {
+          "count": 1,
+          "last_used": "2026-08-26T14:23:22.998Z",
+          "first_used": "2026-08-26T14:23:22.998Z"
+        },
+        "publishing-pack": {
+          "count": 1,
+          "last_used": "2026-08-27T16:36:09.579Z",
+          "first_used": "2026-08-27T16:36:09.579Z"
+        },
+        "interview-prep": {
+          "count": 3,
+          "last_used": "2026-09-02T20:02:07.034Z",
+          "first_used": "2026-08-27T21:30:34.950Z"
+        },
+        "schedule": {
+          "count": 1,
+          "last_used": "2026-08-25T05:23:03.663Z",
+          "first_used": "2026-08-25T05:23:03.663Z"
+        },
+        "job-search": {
+          "count": 1,
+          "last_used": "2026-09-01T18:39:25.387Z",
+          "first_used": "2026-09-01T18:39:25.387Z"
+        },
+        "claude-code-guide": {
+          "count": 1,
+          "last_used": "2026-08-25T07:31:25.224Z",
+          "first_used": "2026-08-25T07:31:25.224Z"
+        },
+        "impeccable": {
+          "count": 1,
+          "last_used": "2026-08-26T08:35:28.567Z",
+          "first_used": "2026-08-26T08:35:28.567Z"
+        },
+        "anthropic-skills:frontend-cv-diagnoser": {
+          "count": 1,
+          "last_used": "2026-08-27T13:18:54.857Z",
+          "first_used": "2026-08-27T13:18:54.857Z"
+        },
+        "anthropic-skills:frontend-cv-workflow-optimizer": {
+          "count": 1,
+          "last_used": "2026-08-27T13:19:29.994Z",
+          "first_used": "2026-08-27T13:19:29.994Z"
+        }
+      },
+      "mcp_servers": {
+        "ccd_session": {
+          "count": 18,
+          "last_used": "2026-09-07T07:37:13.935Z",
+          "first_used": "2026-08-24T16:46:20.444Z"
+        },
+        "Claude_Browser": {
+          "count": 599,
+          "last_used": "2026-09-07T08:49:43.784Z",
+          "first_used": "2026-08-23T06:53:09.922Z"
+        },
+        "c57f9b69-0d4f-462d-97eb-996980a1d2fd": {
+          "count": 57,
+          "last_used": "2026-09-07T07:22:37.502Z",
+          "first_used": "2026-08-22T15:08:39.738Z"
+        },
+        "gemini-image": {
+          "count": 12,
+          "last_used": "2026-08-23T08:56:53.216Z",
+          "first_used": "2026-08-22T10:17:34.367Z"
+        },
+        "claude-in-chrome": {
+          "count": 1115,
+          "last_used": "2026-09-03T06:05:57.795Z",
+          "first_used": "2026-08-24T13:37:40.626Z"
+        },
+        "Claude_Code_iOS_Simulator": {
+          "count": 308,
+          "last_used": "2026-08-25T14:56:21.510Z",
+          "first_used": "2026-08-24T17:01:38.738Z"
+        },
+        "dfe46955-fdad-44cb-8a9e-dc2fd721e2ff": {
+          "count": 98,
+          "last_used": "2026-09-07T07:25:11.300Z",
+          "first_used": "2026-08-25T20:08:43.763Z"
+        },
+        "b65786f6-c4fc-45a3-a1ff-8fb4797e62d2": {
+          "count": 252,
+          "last_used": "2026-09-06T09:03:07.883Z",
+          "first_used": "2026-08-22T11:41:27.918Z"
+        },
+        "visualize": {
+          "count": 40,
+          "last_used": "2026-09-06T08:38:27.273Z",
+          "first_used": "2026-08-22T11:43:50.665Z"
+        },
+        "scheduled-tasks": {
+          "count": 10,
+          "last_used": "2026-09-06T08:06:17.946Z",
+          "first_used": "2026-08-25T05:18:23.765Z"
+        },
+        "mcp-registry": {
+          "count": 2,
+          "last_used": "2026-08-22T10:11:17.793Z",
+          "first_used": "2026-08-22T10:11:03.819Z"
+        },
+        "b65garning_b65786f6-c4fc-45a3-a1ff-8fb4797e62d2": {
+          "count": 1,
+          "last_used": "2026-08-24T12:29:35.146Z",
+          "first_used": "2026-08-24T12:29:35.146Z"
+        },
+        "github": {
+          "count": 1,
+          "last_used": "2026-08-29T21:59:47.815Z",
+          "first_used": "2026-08-29T21:59:47.815Z"
+        }
+      },
+      "sources": [
+        "/Users/ashkan/.claude/projects"
+      ]
+    },
+    "elapsed_seconds": 0.94,
+    "generated_at": "2026-09-07T10:19:14+00:00"
+  },
+  "totals": {
+    "always_on_tokens": 582,
+    "on_demand_tokens": 22,
+    "recoverable_tokens": 582,
+    "certain_tokens": 0,
+    "candidate_tokens": 582,
+    "asset_count": 2,
+    "by_assistant": {
+      "codex": 582
+    },
+    "by_kind": {
+      "instruction": 582
+    },
+    "by_severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "info": 1
+    }
+  },
+  "assets": [
+    {
+      "assistant": "codex",
+      "kind": "instruction",
+      "name": "AGENTS.md",
+      "loading": "always",
+      "path": "/Users/ashkan/Documents/projects/contextlint/AGENTS.md",
+      "meta": {
+        "scope": "project",
+        "lines": 51
+      },
+      "always_on_tokens": 582,
+      "on_demand_tokens": 0,
+      "id": "codex:instruction:AGENTS.md@/Users/ashkan/Documents/projects/contextlint/AGENTS.md"
+    },
+    {
+      "assistant": "codex",
+      "kind": "instruction",
+      "name": "benchmarks/fixtures/bloated/AGENTS.md",
+      "loading": "conditional",
+      "path": "/Users/ashkan/Documents/projects/contextlint/benchmarks/fixtures/bloated/AGENTS.md",
+      "meta": {
+        "scope": "project",
+        "lines": 3
+      },
+      "always_on_tokens": 0,
+      "on_demand_tokens": 22,
+      "id": "codex:instruction:benchmarks/fixtures/bloated/AGENTS.md@/Users/ashkan/Documents/projects/contextlint/benchmarks/fixtures/bloated/AGENTS.md"
+    }
+  ],
+  "findings": [
+    {
+      "check": "budget",
+      "severity": "medium",
+      "title": "AGENTS.md costs 582 always-on tokens (100% of your floor)",
+      "detail": "codex/instruction, loading=always. The whole file is injected on every request.",
+      "remediation": "Split the reference material into an on-demand skill and leave only the rules that must apply to every request.",
+      "asset_id": "codex:instruction:AGENTS.md@/Users/ashkan/Documents/projects/contextlint/AGENTS.md",
+      "path": "/Users/ashkan/Documents/projects/contextlint/AGENTS.md",
+      "tokens_at_stake": 582,
+      "refs": [],
+      "at_stake_assets": [
+        "codex:instruction:AGENTS.md@/Users/ashkan/Documents/projects/contextlint/AGENTS.md"
+      ],
+      "confidence": "candidate",
+      "fixable": false,
+      "fix_hint": {}
+    },
+    {
+      "check": "budget",
+      "severity": "info",
+      "title": "582 tokens load before your first prompt (0.3% of a 200,000-token window)",
+      "detail": "Every skill catalog line, always-on instruction file and MCP tool schema is injected into the system prompt on every request. This is the floor cost of your setup: you pay it on the shortest question you ever ask.",
+      "remediation": "Start with the highest-cost always-on assets below. Moving content out of an always-on file and into an on-demand skill converts a per-request cost into a per-use one.",
+      "asset_id": null,
+      "path": null,
+      "tokens_at_stake": 0,
+      "refs": [],
+      "at_stake_assets": [],
+      "confidence": "candidate",
+      "fixable": false,
+      "fix_hint": {}
+    }
+  ]
+}

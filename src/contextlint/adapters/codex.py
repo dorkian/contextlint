@@ -32,11 +32,12 @@ class CodexAdapter:
                 seen.add(top)
                 out.append(self._agents_md(top, ws, ALWAYS))
             # Nested AGENTS.md apply to their subtree only.
-            for f in walk_files(root, "AGENTS.md", max_depth=4):
-                if f in seen:
-                    continue
-                seen.add(f)
-                out.append(self._agents_md(f, ws, CONDITIONAL))
+            if root != ws.home:
+                for f in walk_files(root, "AGENTS.md", max_depth=4):
+                    if f in seen:
+                        continue
+                    seen.add(f)
+                    out.append(self._agents_md(f, ws, CONDITIONAL))
             cfg = root / ".codex" / "config.toml"
             if cfg.is_file():
                 out += self._toml_mcp(cfg, ws)

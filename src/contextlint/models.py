@@ -194,6 +194,21 @@ class Report:
             key=lambda f: (SEVERITY_ORDER.get(f.severity, 9), -f.tokens_at_stake, f.title),
         )
 
+    def dependencies(self) -> list[dict[str, Any]]:
+        """Skills that reference an MCP server by name."""
+        servers = [a for a in self.assets if a.kind == "mcp_server"]
+        if not servers:
+            return []
+        out = []
+        for a in self.assets:
+            if a.kind not in ("skill", "agent", "command"):
+                continue
+            blob = f"{a.always_on_text}\n{a.on_demand_text}".lower()
+            hits = [s.name for s in servers if f"mcp__{s.name.lower()}" in blob or f"`{s.name.lower()}`" in blob]
+            if hits:
+                out.append({"skill": a.name, "servers": sorted(set(hits)), "tokens": a.always_on_tokens})
+        return sorted(out, key=lambda d: -d["tokens"])
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "meta": self.meta,
@@ -210,6 +225,7 @@ class Report:
             },
             "assets": [a.to_dict() for a in self.assets],
             "findings": [f.to_dict() for f in self.sorted_findings()],
+            "dependencies": self.dependencies(),
         }
 
     def to_json(self, indent: int = 2) -> str:

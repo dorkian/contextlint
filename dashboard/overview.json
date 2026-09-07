@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Contextlint Context Assembly",
+    "output": "public/overview-diagram.html",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "always-on", "label": "Always-On Waste", "focus": ["assistant", "contextlint", "always-on"] }
+    ]
+  },
+  "components": [
+    { "id": "user", "type": "external", "label": "Developer", "pos": [40, 200], "size": [120, 60] },
+    { "id": "assistant", "type": "backend", "label": "AI Assistant", "sublabel": "Claude, Cursor, etc.", "pos": [250, 200], "size": [130, 60] },
+    { "id": "contextlint", "type": "security", "label": "Contextlint", "sublabel": "Auditor", "pos": [460, 200], "size": [130, 60] },
+    { "id": "always-on", "type": "database", "label": "Always-On Assets", "sublabel": "Instructions & Skills", "pos": [670, 100], "size": [140, 60] },
+    { "id": "on-demand", "type": "database", "label": "On-Demand Assets", "sublabel": "Lazy loaded rules", "pos": [670, 300], "size": [140, 60] }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "Audit Boundary", "wraps": ["contextlint", "always-on", "on-demand"] }
+  ],
+  "connections": [
+    { "id": "user-prompt", "from": "user", "to": "assistant", "label": "Prompts" },
+    { "id": "assist-audit", "from": "assistant", "to": "contextlint", "label": "Config Parse", "variant": "security" },
+    { "id": "lint-always", "from": "contextlint", "to": "always-on", "label": "Detect Waste", "variant": "emphasis" },
+    { "id": "lint-ondemand", "from": "contextlint", "to": "on-demand", "label": "Scan", "variant": "dashed" }
+  ]
+}

@@ -19,6 +19,17 @@ uvx --from git+https://github.com/dorkian/contextlint contextlint
 
 <sub>No API key. No network. No telemetry. No dependencies.</sub>
 
+<sub>
+<a href="#install">Install</a> ·
+<a href="#install-via-your-ai-assistant">Install via AI assistant</a> ·
+<a href="#usage">Usage</a> ·
+<a href="#keeping-it-healthy-over-time">Scheduled health checks</a> ·
+<a href="#live-dashboard">Dashboard</a> ·
+<a href="#reproducing-the-numbers">Reproducing the numbers</a> ·
+<a href="#how-it-compares">How it compares</a> ·
+<a href="#privacy">Privacy</a>
+</sub>
+
 </div>
 
 ---
@@ -42,6 +53,22 @@ contextlint separates the two, prices them independently, and refuses to add tog
 
 `--html report.html` writes a self-contained visual report: a treemap of always-on cost coloured by whether you have ever invoked the asset, a cost-against-usage scatter, and filterable findings. One file, no CDN, works offline, respects your system theme.
 
+### Live Dashboard
+
+A local React + Vite dashboard over the same data, for when running it or screen-sharing it beats reading a terminal.
+
+<img alt="contextlint dashboard: a headline of 9,582 always-on tokens (4.8% of the context window), a live diagram splitting an asset into its always-on catalog entry versus its on-demand body, a safe-to-reclaim vs. worth-reviewing split, and the always-on-cost-by-asset column chart below it" src="docs/assets/dashboard-dark-hero.png" width="900">
+
+The overview tells the whole story before any scrolling: the always-on total against your context window, a diagram of *why* it splits the way it does — drawn live from the current report, not illustrated once — and the safe-to-reclaim / worth-reviewing split, kept apart the same way the CLI keeps them apart. Below that: always-on cost by asset as a ranked, square-root-scaled column chart; cost against real usage; findings you can filter, search and click through to a file path; and an **Apply Fixes** flow that mirrors the CLI's own git-dirty-tree guard rather than silently bypassing it with `--allow-dirty`.
+
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+
+Open `http://localhost:3535`. Point it at any project by clicking the path in the header, or load `?path=/absolute/path/to/project` directly — bookmarkable, or embeddable behind a fixed link. The server binds to `127.0.0.1` only and never builds a shell command from a string (`execFile` with an argument array throughout) — the exact class of exposure this tool exists to flag, closed in the one place here that could have had it.
+
 ## Install
 
 Not on PyPI yet — install from the repository. Python 3.10+, zero required dependencies.
@@ -56,11 +83,14 @@ pipx install git+https://github.com/dorkian/contextlint
 pip install git+https://github.com/dorkian/contextlint
 ```
 
-For measured rather than estimated token counts, add the `exact` extra:
+Two optional extras, neither needed for the default path:
 
 ```bash
-uv tool install "contextlint[exact] @ git+https://github.com/dorkian/contextlint"
+uv tool install "dorkian-context-lint[exact] @ git+https://github.com/dorkian/contextlint"  # tiktoken, measured counts
+uv tool install "dorkian-context-lint[api] @ git+https://github.com/dorkian/contextlint"    # anthropic, for --tokenizer anthropic
 ```
+
+The distribution name is `dorkian-context-lint` — PyPI's namespace-similarity check rejects the shorter `contextlint`. The installed command is unaffected: it's still `contextlint`, matching everything above.
 
 <details>
 <summary><b>Updating, and working on it locally</b></summary>
@@ -79,6 +109,39 @@ To hack on it:
 git clone https://github.com/dorkian/contextlint && cd contextlint
 pip install -e ".[dev]"
 python -m pytest tests -q
+```
+
+Cutting a release is a maintainer task, documented in [RELEASING.md](RELEASING.md) — it publishes to PyPI over Trusted Publishing (OIDC) on a version tag, no token stored anywhere.
+
+</details>
+
+### Install via your AI assistant
+
+Zero required dependencies and a single git URL means there is nothing for an assistant to get wrong. Paste this into Claude Code, Cursor, Copilot, Codex CLI, or anything else with terminal access:
+
+```text
+Install the contextlint CLI from https://github.com/dorkian/contextlint. It is not
+published to PyPI yet, so do not run a bare `pip install contextlint` — it will 404.
+Install directly from git instead: use `uv tool install
+git+https://github.com/dorkian/contextlint` if uv is available, otherwise `pipx install
+git+https://github.com/dorkian/contextlint`, otherwise `pip install --user
+git+https://github.com/dorkian/contextlint`. Then run `contextlint --version` to confirm
+it worked, and `contextlint audit --no-global` in this project to show me a real report.
+```
+
+<details>
+<summary><b>Also using Claude Code? Set it up as a skill too</b></summary>
+
+<br>
+
+`skill/contextlint/SKILL.md` in this repo wraps the CLI so Claude can run and interpret an audit on request, without you typing a single flag. Add this to the prompt above, or run it on its own:
+
+```text
+Also install this as a Claude Code skill: run `mkdir -p ~/.claude/skills/contextlint &&
+curl -fsSL
+https://raw.githubusercontent.com/dorkian/contextlint/main/skill/contextlint/SKILL.md -o
+~/.claude/skills/contextlint/SKILL.md`. Then, in future sessions, I can just ask about my
+context budget, dead skills, or MCP security and you'll know to reach for contextlint.
 ```
 
 </details>

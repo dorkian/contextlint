@@ -106,11 +106,12 @@ class ClaudeCodeAdapter:
                 out.append(self._memory_asset(p, ws, ALWAYS))
 
         # Nested CLAUDE.md files load only when work touches their directory.
-        for p in walk_files(root, "CLAUDE.md", max_depth=4):
-            if p in seen:
-                continue
-            seen.add(p)
-            out.append(self._memory_asset(p, ws, CONDITIONAL))
+        if root != ws.home:
+            for p in walk_files(root, "CLAUDE.md", max_depth=4):
+                if p in seen:
+                    continue
+                seen.add(p)
+                out.append(self._memory_asset(p, ws, CONDITIONAL))
 
         # The auto-memory index is injected every session; individual memory files
         # are recalled on relevance.

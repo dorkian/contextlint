@@ -10,6 +10,7 @@ build/
 .DS_Store
 contextlint-report.html
 contextlint-report.json
+/report.html
 benchmarks/results/*.json
 .contextlint-history.jsonl
 .contextlint-backups/

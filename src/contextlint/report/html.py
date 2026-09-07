@@ -152,18 +152,7 @@ def _scatter_svg(report: Report, usage: dict, width: int = 920, height: int = 30
 # --- dependency edges --------------------------------------------------------
 
 def _dependencies(report: Report) -> list[dict]:
-    servers = [a for a in report.assets if a.kind == "mcp_server"]
-    if not servers:
-        return []
-    out = []
-    for a in report.assets:
-        if a.kind not in ("skill", "agent", "command"):
-            continue
-        blob = f"{a.always_on_text}\n{a.on_demand_text}".lower()
-        hits = [s.name for s in servers if f"mcp__{s.name.lower()}" in blob or f"`{s.name.lower()}`" in blob]
-        if hits:
-            out.append({"skill": a.name, "servers": sorted(set(hits)), "tokens": a.always_on_tokens})
-    return sorted(out, key=lambda d: -d["tokens"])
+    return report.dependencies()
 
 
 # --- page --------------------------------------------------------------------

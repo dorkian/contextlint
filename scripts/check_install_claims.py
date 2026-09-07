@@ -12,6 +12,25 @@ Only *commands* count — fenced code blocks in Markdown and `run:` steps in
 workflows. Prose describing the rule is not a promise to the reader, and an earlier
 grep-based version of this check failed the build on the sentence in RELEASING.md
 explaining why the check exists.
+
+Two different names matter here, and this file keeps them apart on purpose:
+
+- COMMAND ("contextlint") — what a reader types, and what a bare-install claim
+  in the docs would use. This is what the regex below searches for.
+- DISTRIBUTION ("dorkian-context-lint") — what PyPI actually calls the package,
+  after its registration-time namespace-similarity check rejected the shorter
+  name (a plain GET on the unclaimed name still 404s, so that rejection is
+  invisible until someone actually tries to register it — see RELEASING.md).
+  This is what gets checked against the PyPI API.
+
+Because they permanently differ, a bare `uvx contextlint` / `pip install
+contextlint` will never work, publish or not — `uvx <name>` assumes the package
+name matches the command name unless told otherwise with `--from`. So this check
+does not "start allowing" those bare forms once the package ships; it keeps
+rejecting them forever, which is correct. What publishing enables is the form
+that does work: `uvx --from dorkian-context-lint contextlint` (verified against
+the git source; the exempt list below waves it through since `--from` isn't a
+bare claim).
 """
 
 from __future__ import annotations
@@ -22,20 +41,27 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-PACKAGE = "contextlint"
+COMMAND = "contextlint"                # what a reader types
+DISTRIBUTION = "dorkian-context-lint"  # what PyPI actually calls it
 ROOT = Path(__file__).resolve().parents[1]
 SKIP = {".git", ".venv", "node_modules", "dist", "build", "__pycache__"}
 
 # A bare install of the package: no git+, no local path, no URL.
 CLAIM = re.compile(
-    r"""(?:^|\s)(?:
-          uvx\s+(?:--\S+\s+)*""" + PACKAGE + r"""\b
-        | pipx\s+run\s+""" + PACKAGE + r"""\b
-        | (?:pip|pipx|uv\s+tool)\s+install\s+(?:--?\S+\s+)*["']?""" + PACKAGE + r"""(?:\[[^\]]+\])?["']?(?:\s|$)
+    r"""(?:^|[\s`])(?:
+          uvx\s+(?:--\S+\s+)*""" + COMMAND + r"""\b
+        | pipx\s+run\s+""" + COMMAND + r"""\b
+        | (?:pip|pipx|uv\s+tool)\s+install\s+(?:--?\S+\s+)*["']?""" + COMMAND + r"""(?:\[[^\]]+\])?["']?(?:[\s`,.)]|$)
         )""",
     re.X,
 )
-EXEMPT = ("git+", "://", "./", "-e ", " . ")
+EXEMPT = ("git+", "://", "./", "-e ", " . ", "--from")
+
+# "do not run `pip install contextlint`, it will 404" is the check's own warning
+# text about itself (this file's docstring, or a README section telling a reader
+# — or an AI assistant — what *not* to do). That is correct advice, not a broken
+# promise; only flag a match with no negation cue anywhere earlier in the line.
+NEGATION = re.compile(r"\b(?:do\s+not|don'?t|never|avoid|instead\s+of|rather\s+than|not\s+a\s+bare)\b", re.I)
 
 
 def code_lines(path: Path) -> list[tuple[int, str]]:
@@ -79,8 +105,12 @@ def main() -> int:
         if any(part in SKIP for part in path.parts) or path.name == Path(__file__).name:
             continue
         for lineno, line in code_lines(path):
-            if CLAIM.search(line) and not any(e in line for e in EXEMPT):
-                claims.append(f"{path.relative_to(ROOT)}:{lineno}: {line.strip()}")
+            m = CLAIM.search(line)
+            if not m or any(e in line for e in EXEMPT):
+                continue
+            if NEGATION.search(line[: m.start()]):
+                continue
+            claims.append(f"{path.relative_to(ROOT)}:{lineno}: {line.strip()}")
 
     if not claims:
         print("No bare PyPI install is documented — nothing to verify.")
@@ -90,12 +120,16 @@ def main() -> int:
     for c in claims:
         print(f"  {c}")
 
-    if published(PACKAGE):
-        print(f"\nPyPI serves {PACKAGE} — these commands work.")
+    if published(COMMAND):
+        print(f"\nPyPI serves a package literally named {COMMAND!r} — these commands work.")
         return 0
 
-    print(f"\n::error::PyPI does not serve {PACKAGE}, so the commands above fail for every "
-          f"reader. Either publish (see RELEASING.md) or use a git+https install.")
+    print(
+        f"\n::error::PyPI does not serve a package named {COMMAND!r} (it publishes as "
+        f"{DISTRIBUTION!r} instead — see RELEASING.md for why), so the commands above fail "
+        f"for every reader. Use a git+https install, or a --from-qualified form such as "
+        f"`uvx --from {DISTRIBUTION} {COMMAND}`."
+    )
     return 1
 
 

@@ -1,11 +1,22 @@
 # Releasing
 
-`contextlint` is not on PyPI yet. Until it is, the README documents git installs only — a CI
-job runs `scripts/check_install_claims.py`, which fails the build if any fenced command in
-the docs promises a bare PyPI install while PyPI does not serve the package.
+`contextlint` (the tool, the repo, the installed command) is not on PyPI yet. Until it is, the
+README documents git installs only — a CI job runs `scripts/check_install_claims.py`, which
+fails the build if any fenced command in the docs promises a bare PyPI install while PyPI does
+not serve the package.
 
-Publishing flips that on. After the first successful release the README's install section can
-be simplified to `uvx contextlint`, and the guard will start allowing it automatically.
+**The PyPI distribution name is `dorkian-context-lint`, not `contextlint`.** PyPI's
+registration-time namespace-similarity check rejects the shorter name outright — a plain GET
+against the JSON API returns 404 either way, so that rejection is invisible until you actually
+try to register it. Nothing else changes: the repo, the CLI command, and every mention of
+"contextlint" elsewhere in this project stay exactly as they are.
+
+Publishing flips the guard on, but the README's install section can never fully collapse to a
+bare `uvx contextlint` — `uvx <name>` assumes the package name matches the command name by
+default, and here they permanently don't. The simplified form once published is
+`uvx --from dorkian-context-lint contextlint` (verified: this works today against the git
+source, so it's exactly what publishing turns on — see `scripts/check_install_claims.py`'s
+docstring for what the guard actually allows once PyPI serves the package).
 
 ## One-time setup (must be done by a PyPI account owner)
 
@@ -18,7 +29,7 @@ of long-lived credential this tool flags in other people's configs.
 
    | Field | Value |
    |---|---|
-   | PyPI Project Name | `contextlint` |
+   | PyPI Project Name | `dorkian-context-lint` |
    | Owner | `dorkian` |
    | Repository name | `contextlint` |
    | Workflow name | `release.yml` |
