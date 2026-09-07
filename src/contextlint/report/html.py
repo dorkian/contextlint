@@ -11,7 +11,7 @@ import html
 import json
 from pathlib import Path
 
-from ..models import CRITICAL, HIGH, INFO, LOW, MEDIUM, Report
+from ..models import CERTAIN, CRITICAL, HIGH, INFO, LOW, MEDIUM, Report
 
 SEV_TONE = {CRITICAL: "crit", HIGH: "high", MEDIUM: "med", LOW: "low", INFO: "info"}
 
@@ -166,7 +166,7 @@ def write_html(report: Report, path: Path) -> Path:
         {
             "sev": f.severity, "tone": SEV_TONE[f.severity], "title": f.title, "detail": f.detail,
             "fix": f.remediation, "check": f.check, "tokens": f.tokens_at_stake,
-            "path": str(f.path) if f.path else "",
+            "path": str(f.path) if f.path else "", "certain": f.confidence == CERTAIN,
         }
         for f in report.sorted_findings()
     ]
@@ -284,6 +284,8 @@ td.num {{ text-align:right; font-variant-numeric:tabular-nums }}
 .f .sev {{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase }}
 .f.crit .sev {{ color:var(--crit) }} .f.high .sev {{ color:var(--high) }}
 .f.med .sev {{ color:var(--med) }} .f.low .sev {{ color:var(--low) }} .f.info .sev {{ color:var(--info) }}
+.f .conf {{ font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ok,#1baf7a); border:1px solid currentColor; border-radius:99px; padding:1px 7px }}
 .f .t {{ font-weight:600; flex:1; min-width:200px }}
 .f .cost {{ font-size:12px; color:var(--mute); font-variant-numeric:tabular-nums }}
 .f .d {{ color:var(--mute); margin-top:6px; white-space:pre-wrap }}
@@ -321,6 +323,7 @@ has never once been invoked. Horizontal axis is square-root scaled.</div>
 <tbody>{dep_rows}</tbody></table></div>
 
 <h2>Findings</h2>
+<p class="sub" style="margin:-6px 0 14px">A <span class="conf" style="display:inline-block">certain</span> badge means removing it cannot change behaviour (a byte-identical duplicate, an empty asset). Everything unmarked is a judgement call — contextlint reports it, it does not decide for you.</p>
 <div class="filters" id="filters"></div>
 <div id="findings"></div>
 
@@ -340,7 +343,9 @@ function render() {{
   const list = active === "all" ? FINDINGS : FINDINGS.filter(f => f.sev === active);
   fEl.innerHTML = list.length ? list.map(f => `
     <div class="f ${{f.tone}}">
-      <div class="top"><span class="sev">${{esc(f.sev)}}</span><span class="t">${{esc(f.title)}}</span>
+      <div class="top"><span class="sev">${{esc(f.sev)}}</span>
+      ${{f.certain ? `<span class="conf" title="Removing this cannot change behaviour">certain</span>` : ""}}
+      <span class="t">${{esc(f.title)}}</span>
       ${{f.tokens ? `<span class="cost">−${{f.tokens.toLocaleString()}} tok</span>` : ""}}</div>
       <div class="d">${{esc(f.detail)}}</div>
       ${{f.fix ? `<div class="r">→ ${{esc(f.fix)}}</div>` : ""}}

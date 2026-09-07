@@ -72,10 +72,41 @@ def probe(asset_meta: dict[str, Any], name: str, timeout: float = DEFAULT_TIMEOU
 
 
 def describe(asset_meta: dict[str, Any]) -> str:
-    """What probing this server will actually do, for the pre-flight warning."""
+    """What probing this server will actually do, for the pre-flight warning.
+
+    Argv values that look like credentials are redacted — this string is shown
+    to the user (and, via ``report.meta['probed_commands']``, can end up in a
+    saved JSON/HTML report), so it must not become the second place a secret
+    that's already flagged by the security check leaks in plaintext.
+    """
     if asset_meta.get("command"):
-        return " ".join([str(asset_meta["command"]), *[str(a) for a in asset_meta.get("args") or []]])
+        return " ".join(
+            [str(asset_meta["command"]), *_redacted_args(asset_meta.get("args") or [])]
+        )
     return f"POST {asset_meta.get('url')}"
+
+
+def _redacted_args(args: list[Any]) -> list[str]:
+    from .checks.security import ARG_FLAG_RE, _looks_like_secret_blob, _secret_label
+
+    out: list[str] = []
+    args = [str(a) for a in args]
+    skip_next = False
+    for i, arg in enumerate(args):
+        if skip_next:
+            skip_next = False
+            continue
+        flag = ARG_FLAG_RE.match(arg)
+        nxt = args[i + 1] if i + 1 < len(args) else ""
+        if flag and nxt and not nxt.startswith("-") and _secret_label(flag.group(1), nxt):
+            out.append(arg)
+            out.append("[redacted]")
+            skip_next = True
+        elif not flag and _looks_like_secret_blob(arg):
+            out.append("[redacted]")
+        else:
+            out.append(arg)
+    return out
 
 
 # --- stdio -------------------------------------------------------------------

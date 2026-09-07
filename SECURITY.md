@@ -1,27 +1,40 @@
-# Security
+# Security Policy
 
-## What contextlint does with your data
+## Privacy and data handling
 
 The default path reads local files, makes no network connection, and writes nothing. Session
 transcripts are parsed for tool-invocation names and timestamps only — never prompt or response
 text. Asset content never appears in the JSON or HTML output; only names, paths and counts do.
 
-Two modes are exceptions, both opt-in and both stated at the point of use:
+Two modes are exceptions, both opt-in and both announced at the point of use:
 
 - `--mcp-probe` starts your configured MCP servers to read their real tool schemas. It prints
-  the exact commands it will run and asks for confirmation on a TTY.
+  the exact commands it will run and asks for interactive confirmation on a TTY.
 - `--tokenizer anthropic` sends configuration text to the Anthropic API for exact counting.
 
-## What its security findings mean
+For complete details on data sources inspected, execution boundaries, and storage policies,
+see **[docs/privacy-and-threat-model.md](docs/privacy-and-threat-model.md)**.
 
-They are heuristics over configuration files. They are not proof of a vulnerability, and they
-are not a substitute for auditing the servers you actually run. Every finding names the pattern
-it matched and why that pattern is worth a look, so a false positive costs you ten seconds.
+## Security findings scope and non-guarantee
 
-contextlint reads configuration. It does not analyse MCP server source code, does not attempt
-exploitation, and does not send anything to a scanning service.
+Contextlint identifies known high-risk configuration patterns across coding assistant setups
+and MCP configurations.
+
+> **Non-Guarantee**: Contextlint is not a penetration test, does not verify server implementation
+> safety, and cannot guarantee that an MCP server, tool description, or agent workflow is safe.
+> It reports matched configuration patterns and indicators so you can audit them quickly.
+
+Findings are separated by certainty:
+
+1. **Deterministic facts**: Clear configuration flaws, such as unauthenticated remote endpoints,
+   plaintext HTTP transport, credentials passed in CLI argument arrays, or filesystem access rooted at `/`.
+2. **Heuristic detections**: Patterns requiring evaluation, such as instruction-shaped tool descriptions,
+   obfuscated Unicode-tag characters, or zero-width character sequences.
+3. **Unverified runtime risks**: Vulnerabilities in third-party server code, runtime prompt injection
+   from tool outputs, or compromised package dependencies cannot be verified by static configuration checks.
 
 ## Reporting a vulnerability in contextlint itself
 
-Open a GitHub issue. If the report itself is sensitive, say so in the issue without details and
-a private channel will be arranged.
+If you discover a security issue in `contextlint` itself, please report it responsibly.
+Open a GitHub issue requesting a private security disclosure channel, or contact the maintainers
+directly. Vulnerabilities will be addressed and patched promptly.

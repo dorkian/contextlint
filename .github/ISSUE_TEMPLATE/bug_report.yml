@@ -1,0 +1,56 @@
+name: Bug report
+description: Report a defect, incorrect token price, false positive, or unexpected behavior in contextlint
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug report! Please ensure you are testing against the latest version (`uv tool upgrade dorkian-context-lint` or `pip install -U dorkian-context-lint`).
+  - type: input
+    id: version
+    attributes:
+      label: contextlint version
+      description: Run `contextlint --version`
+      placeholder: e.g. contextlint 0.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: assistant
+    attributes:
+      label: Which assistant is involved?
+      options:
+        - Claude Code
+        - Codex / AGENTS.md
+        - Cursor
+        - GitHub Copilot
+        - Multiple / Not assistant-specific
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating System & Python version
+      placeholder: e.g. macOS Sonoma (Apple Silicon), Python 3.12
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe what you observed, what was unexpected, or which finding was a false positive.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce
+      description: Command run, minimal directory structure, or configuration snippet. Please sanitize any confidential keys or internal paths.
+      placeholder: contextlint audit --no-global
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Terminal output
+      render: shell
+      placeholder: Paste the relevant output here
