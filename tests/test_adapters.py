@@ -42,7 +42,7 @@ def test_copilot_apply_to_makes_it_conditional(bloated_report):
 
 def test_every_mcp_server_in_one_file_is_its_own_asset(bloated_report):
     servers = {a.name for a in bloated_report.assets if a.kind == "mcp_server"}
-    assert servers == {"public-notes", "unpinned", "shelled", "filesystem", "leaky"}
+    assert servers == {"public-notes", "unpinned", "shelled", "filesystem", "leaky", "cookie-auth"}
 
 
 def test_asset_ids_are_unique(bloated_report):

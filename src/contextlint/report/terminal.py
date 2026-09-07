@@ -50,11 +50,10 @@ def render_terminal(report: Report, *, verbose: bool = False, max_findings: int 
     certain, candidate = report.certain_tokens, report.candidate_tokens
     if certain:
         out.append(f"  {c('safe to reclaim', BOLD)}  {certain:>7,} tok "
-                   f"({certain / total:.0%})  duplicates and empty assets — removing them "
-                   f"cannot change behaviour")
+                   f"({certain / total:.0%})  duplicates and empty assets")
     if candidate:
         out.append(f"  {c('worth reviewing', BOLD)}  {candidate:>7,} tok "
-                   f"({candidate / total:.0%})  needs your judgement — see the findings below")
+                   f"({candidate / total:.0%})  needs your judgement, see findings")
     out.append("")
 
     # --- breakdown -----------------------------------------------------------
@@ -108,18 +107,23 @@ def render_terminal(report: Report, *, verbose: bool = False, max_findings: int 
                    f"use --format json or --html for the full set{RESET if color else ''}")
         out.append("")
 
+    notes: list[str] = []
     if not m["tokenizer_exact"]:
-        out.append(DIM_LINE(width, color))
-        out.append(
-            f"{DIM if color else ''}Token counts are estimated by contextlint's offline heuristic. "
-            f"Install `contextlint[exact]` and pass --tokenizer tiktoken for measured counts; "
-            f"benchmarks/calibrate.py reports the heuristic's error.{RESET if color else ''}"
+        notes.append(
+            "Token counts are estimated by contextlint's offline heuristic. Install "
+            "`contextlint[exact]` and pass --tokenizer tiktoken for measured counts; "
+            "benchmarks/calibrate.py reports the heuristic's error."
         )
     if not m["mcp_probed"] and any(a.kind == "mcp_server" for a in report.assets):
-        out.append(
-            f"{DIM if color else ''}MCP tool-schema cost is unmeasured and excluded from the totals. "
-            f"Add --mcp-probe to measure it.{RESET if color else ''}"
+        notes.append(
+            "MCP tool-schema cost is unmeasured and excluded from the totals. "
+            "Add --mcp-probe to measure it."
         )
+    if notes:
+        out.append(DIM_LINE(width, color))
+        for note in notes:
+            for line in _wrap(note, width):
+                out.append(f"{DIM if color else ''}{line}{RESET if color else ''}")
     return "\n".join(out)
 
 

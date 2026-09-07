@@ -1,13 +1,45 @@
 {
   "mcpServers": {
-    "public-notes": { "type": "http", "url": "http://notes.example.com/mcp" },
-    "unpinned": { "command": "npx", "args": ["-y", "@example/mcp-server"] },
-    "shelled": { "command": "sh", "args": ["-c", "start-server --port $PORT"] },
-    "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem@1.0.0", "/"] },
+    "public-notes": {
+      "type": "http",
+      "url": "http://notes.example.com/mcp"
+    },
+    "unpinned": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@example/mcp-server"
+      ]
+    },
+    "shelled": {
+      "command": "sh",
+      "args": [
+        "-c",
+        "start-server --port $PORT"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem@1.0.0",
+        "/"
+      ]
+    },
     "leaky": {
       "type": "http",
       "url": "https://api.example.com/mcp",
-      "headers": { "Authorization": "Bearer sk-ant-api03-EXAMPLEFIXTUREKEY1234567890abcdef" }
+      "headers": {
+        "Authorization": "Bearer sk-ant-api03-EXAMPLEFIXTUREKEY1234567890abcdef"
+      }
+    },
+    "cookie-auth": {
+      "command": "uvx",
+      "args": [
+        "some-webapi-mcp@1.0.0",
+        "--secure-psid",
+        "g.a000FIXTUREx7QsPmNb3vKdW9RtYuIoPaSdFgHjKlZxCvBnM1234567890abcdefgh"
+      ]
     }
   }
 }

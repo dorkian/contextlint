@@ -111,3 +111,33 @@ def test_check_selection(fixture_path):
     skipped = run_audit(str(fixture_path), include_global=False, use_usage=False,
                         skip_checks=["security"])
     assert "security" not in {f.check for f in skipped.findings}
+
+
+def test_credential_in_argv_is_critical(bloated_report):
+    """Session cookies hide in argv, where they also leak to anyone who can run ps."""
+    hits = find(bloated_report, "command-line argument")
+    assert hits and hits[0].severity == CRITICAL
+
+
+def test_argv_credential_is_reported_once(bloated_report):
+    """A flagged value must not also be reported as an anonymous high-entropy blob."""
+    flagged = find(bloated_report, "command-line argument")
+    entropy = find(bloated_report, "High-entropy value")
+    assert len(flagged) == 1
+    assert not entropy, "the same argv value was reported twice"
+
+
+def test_per_project_mcp_servers_are_read(tmp_path):
+    """Claude Code nests most real servers under projects.<path>.mcpServers."""
+    from contextlint.audit import run_audit
+
+    (tmp_path / ".claude.json").write_text(
+        '{"projects":{"/some/proj":{"mcpServers":{"nested":{"command":"npx",'
+        '"args":["-y","pkg@1.0.0"]}}}}}'
+    )
+    (tmp_path / "CLAUDE.md").write_text("# x")
+    report = run_audit(str(tmp_path), include_global=False, use_usage=False)
+    servers = [a for a in report.assets if a.kind == "mcp_server"]
+    assert len(servers) == 1
+    assert servers[0].meta["server_name"] == "nested"
+    assert servers[0].meta["declared_for"] == "/some/proj"

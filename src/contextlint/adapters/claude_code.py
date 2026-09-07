@@ -146,6 +146,7 @@ class ClaudeCodeAdapter:
         out: list[Asset] = []
         candidates = [
             (ws.project / ".mcp.json", "mcpServers"),
+            (ws.project / ".claude.json", "mcpServers"),
             (ws.project / ".claude" / "settings.json", "mcpServers"),
             (ws.project / ".claude" / "settings.local.json", "mcpServers"),
         ]
@@ -163,6 +164,10 @@ class ClaudeCodeAdapter:
 def mcp_assets_from_json(path: Path, key: str, assistant: str, ws: Workspace) -> list[Asset]:
     """Parse an ``{"mcpServers": {...}}`` file into one asset per server.
 
+    Claude Code keeps global servers at the top level and per-project servers under
+    ``projects.<path>.mcpServers``. Reading only the top level misses every server a
+    user configured for a specific directory, which in practice is most of them.
+
     Tool schemas are *not* read here — that would require executing the server.
     ``contextlint audit --mcp-probe`` does that, explicitly and opt-in.
     """
@@ -172,38 +177,57 @@ def mcp_assets_from_json(path: Path, key: str, assistant: str, ws: Workspace) ->
         data = json.loads(read_text(path) or "{}")
     except json.JSONDecodeError:
         return []
-    servers = data.get(key) or {}
-    if not isinstance(servers, dict):
-        return []
-    out = []
-    for sname, cfg in servers.items():
-        if not isinstance(cfg, dict):
-            continue
-        out.append(
-            Asset(
-                assistant=assistant,
-                kind="mcp_server",
-                name=sname,
-                loading=ALWAYS,
-                path=path,
-                always_on_text="",  # filled by the probe, or estimated by the budget check
-                on_demand_text="",
-                meta={
-                    "scope": ws.scope_of(path),
-                    "transport": _transport(cfg),
-                    "command": cfg.get("command"),
-                    "args": cfg.get("args") or [],
-                    "url": cfg.get("url"),
-                    "env_keys": sorted((cfg.get("env") or {}).keys()) if isinstance(cfg.get("env"), dict) else [],
-                    "env": cfg.get("env") if isinstance(cfg.get("env"), dict) else {},
-                    "headers": cfg.get("headers") if isinstance(cfg.get("headers"), dict) else {},
-                    "config_file": str(path),
-                    "tools_measured": False,
-                    "tool_count": None,
-                },
-            )
-        )
+
+    scopes: list[tuple[str, dict]] = []
+    if isinstance(data.get(key), dict) and data[key]:
+        scopes.append(("global", data[key]))
+    projects = data.get("projects")
+    if isinstance(projects, dict):
+        for proj_path, proj in projects.items():
+            nested = proj.get(key) if isinstance(proj, dict) else None
+            if isinstance(nested, dict) and nested:
+                scopes.append((str(proj_path), nested))
+
+    out: list[Asset] = []
+    for scope_label, servers in scopes:
+        for sname, cfg in servers.items():
+            if not isinstance(cfg, dict):
+                continue
+            out.append(_server_asset(sname, cfg, scope_label, path, assistant, ws))
     return out
+
+
+def _server_asset(
+    sname: str, cfg: dict, scope_label: str, path: Path, assistant: str, ws: Workspace
+) -> Asset:
+    env = cfg.get("env") if isinstance(cfg.get("env"), dict) else {}
+    headers = cfg.get("headers") if isinstance(cfg.get("headers"), dict) else {}
+    return Asset(
+        assistant=assistant,
+        kind="mcp_server",
+        # Scope-qualified, because the same server name declared for two different
+        # projects is two different assets with two different configurations.
+        name=sname if scope_label == "global" else f"{sname} ({Path(scope_label).name or scope_label})",
+        loading=ALWAYS,
+        path=path,
+        always_on_text="",  # filled by the probe, or left unmeasured by the budget check
+        on_demand_text="",
+        meta={
+            "scope": ws.scope_of(path),
+            "server_name": sname,
+            "declared_for": scope_label,
+            "transport": _transport(cfg),
+            "command": cfg.get("command"),
+            "args": [str(a) for a in (cfg.get("args") or [])],
+            "url": cfg.get("url"),
+            "env_keys": sorted(env.keys()),
+            "env": env,
+            "headers": headers,
+            "config_file": str(path),
+            "tools_measured": False,
+            "tool_count": None,
+        },
+    )
 
 
 def _transport(cfg: dict) -> str:

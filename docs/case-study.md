@@ -27,7 +27,7 @@ ALWAYS-ON CONTEXT
 Nearly one tenth of the window was spent before typing anything. The split matters more than
 the total: 271,820 tokens of skill bodies are **not** an always-on cost — they arrive only when
 a skill is invoked. Pricing them as always-on, which is what auditing by file size does, would
-have reported a 145% context overhead and been wrong by a factor of fifteen.
+have reported a 145.3% context overhead and been wrong by a factor of 15.5.
 
 | Source | Always-on tokens | Share |
 |---|---|---|

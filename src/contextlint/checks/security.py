@@ -37,7 +37,12 @@ SECRET_PREFIXES = (
     ("tvly-", "Tavily API key"),
 )
 
-SECRET_KEY_RE = re.compile(r"(api[-_]?key|access[-_]?key|token|secret|password|passwd|credential|authorization|x-api-key|\bpat\b)", re.I)
+SECRET_KEY_RE = re.compile(r"(api[-_]?key|access[-_]?key|token|secret|password|passwd|credential|authorization|x-api-key|\bpat\b|cookie|psid|session)", re.I)
+
+# Credentials passed as command-line arguments rather than environment variables.
+# Config files get committed and screenshotted; argv is no safer than env, and it
+# additionally leaks to anyone who can run `ps`.
+ARG_FLAG_RE = re.compile(r"^--?([A-Za-z0-9_-]*(?:key|token|secret|password|cookie|psid|session|auth|credential)[A-Za-z0-9_-]*)$", re.I)
 AUTH_SCHEME_RE = re.compile(r"^\s*(Bearer|Token|Basic|ApiKey)\s+", re.I)
 PLACEHOLDER_RE = re.compile(r"^\s*(\$\{?[A-Z_]+\}?|<[^>]+>|\{\{.*\}\}|xxx+|your[-_ ]|changeme|redacted)", re.I)
 SHELL_META_RE = re.compile(r"[;&|`$><]|\$\(|\$\{")
@@ -145,7 +150,43 @@ class SecurityCheck:
                     )
                 )
 
-        # 3. unpinned remote code execution
+        # 3. credentials passed as command-line arguments
+        reported_args: set[int] = set()
+        for i, arg in enumerate(args):
+            flag = ARG_FLAG_RE.match(arg)
+            value = args[i + 1] if flag and i + 1 < len(args) else ""
+            if flag and value and not value.startswith("-") and _secret_label(flag.group(1), value):
+                reported_args.add(i + 1)
+                out.append(
+                    Finding(
+                        check=self.id, severity=CRITICAL,
+                        title=f"Credential passed as a command-line argument to MCP server '{s.name}': {arg}",
+                        detail=(
+                            f"`{arg} {value[:6]}…` in {m.get('config_file')}. Arguments are worse than "
+                            "environment variables, not better: the config file still gets committed "
+                            "and screenshotted, and the value is additionally visible to anyone who "
+                            "can run `ps` on this machine. Session cookies are the common case and "
+                            "are as good as a password until they expire."
+                        ),
+                        remediation="Move the value into the server's `env` block referencing a shell "
+                                    "variable, or into a credential helper, then rotate it.",
+                        asset_id=s.id, path=s.path, refs=REFS,
+                    )
+                )
+            elif not flag and i not in reported_args and _looks_like_secret_blob(arg):
+                out.append(
+                    Finding(
+                        check=self.id, severity=HIGH,
+                        title=f"High-entropy value in MCP server '{s.name}' arguments",
+                        detail=f"A {len(arg)}-character opaque token sits in argv in "
+                               f"{m.get('config_file')}. If it is a credential, treat it as exposed.",
+                        remediation="Confirm what it is. If it authenticates anything, move it out of "
+                                    "the config file and rotate it.",
+                        asset_id=s.id, path=s.path, refs=REFS,
+                    )
+                )
+
+        # 4. unpinned remote code execution
         if cmd in ("npx", "npm", "pnpx", "bunx", "uvx", "pipx"):
             spec = next((a for a in args if not a.startswith("-")), "")
             pinned = bool(re.search(r"@\d|==|@[0-9a-f]{7,}", spec))
@@ -164,7 +205,7 @@ class SecurityCheck:
                     )
                 )
 
-        # 4. shell injection surface
+        # 5. shell injection surface
         if cmd in ("sh", "bash", "zsh", "cmd", "powershell") and any(a in ("-c", "/c", "-Command") for a in args):
             out.append(
                 Finding(
@@ -188,7 +229,7 @@ class SecurityCheck:
                 )
             )
 
-        # 5. filesystem scope creep
+        # 6. filesystem scope creep
         if "filesystem" in s.name.lower() or any("filesystem" in a.lower() for a in args):
             broad = [a for a in args if a in FS_SCOPE_ROOTS or a.rstrip("/") in ("", str(Path.home()))]
             if broad:
@@ -353,6 +394,20 @@ class SecurityCheck:
                                 )
                             )
         return out
+
+
+def _looks_like_secret_blob(value: str) -> bool:
+    """A long, dense, non-word string in argv is a credential until proven otherwise."""
+    if len(value) < 40 or value.startswith(("-", "/", "~", "http")) or " " in value:
+        return False
+    alnum = sum(c.isalnum() for c in value)
+    if alnum / len(value) < 0.8:
+        return False
+    return (
+        any(c.isdigit() for c in value)
+        and any(c.isupper() for c in value)
+        and any(c.islower() for c in value)
+    )
 
 
 def _looks_like_key(body: str) -> bool:

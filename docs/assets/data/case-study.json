@@ -1,0 +1,28 @@
+{
+  "_comment": "Aggregate figures from the dogfood audit documented in docs/case-study.md. Aggregates only - no file paths, no machine-specific content. Regenerate charts with: python docs/assets/make_charts.py",
+  "measured_on": "2026-09-07",
+  "context_window": 200000,
+  "always_on_tokens": 18703,
+  "on_demand_tokens": 271820,
+  "certain_tokens": 1310,
+  "candidate_tokens": 16502,
+  "always_on_by_kind": {
+    "skill catalog entries": 9189,
+    "MCP tool schemas": 5216,
+    "memory files": 4223,
+    "instruction files": 75
+  },
+  "skills_installed": 92,
+  "skills_invoked": 15,
+  "sessions": 148,
+  "session_span_days": 16.5,
+  "duplicate_pairs": 12,
+  "missing_frontmatter": 6,
+  "mcp_servers": [
+    {"name": "github",     "tools": 26, "tokens": 3517, "called": true,  "status": "ok"},
+    {"name": "filesystem", "tools": 14, "tokens": 1699, "called": false, "status": "ok"},
+    {"name": "n8n",        "tools": null, "tokens": 0,  "called": false, "status": "fails to start"},
+    {"name": "make",       "tools": null, "tokens": 0,  "called": false, "status": "fails to start"},
+    {"name": "pixelcut",   "tools": null, "tokens": 0,  "called": false, "status": "HTTP 401"}
+  ]
+}
