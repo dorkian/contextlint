@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "public-notes": { "type": "http", "url": "http://notes.example.com/mcp" },
+    "unpinned": { "command": "npx", "args": ["-y", "@example/mcp-server"] },
+    "shelled": { "command": "sh", "args": ["-c", "start-server --port $PORT"] },
+    "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem@1.0.0", "/"] },
+    "leaky": {
+      "type": "http",
+      "url": "https://api.example.com/mcp",
+      "headers": { "Authorization": "Bearer sk-ant-api03-EXAMPLEFIXTUREKEY1234567890abcdef" }
+    }
+  }
+}

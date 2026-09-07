@@ -1,0 +1,5 @@
+---
+description: Testing conventions
+globs: ["**/*_test.py"]
+---
+Arrange, act, assert. One behaviour per test.

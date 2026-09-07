@@ -1,0 +1,6 @@
+---
+description: Project-wide conventions
+alwaysApply: true
+---
+Use tabs. Prefer composition over inheritance. Never introduce a dependency for
+something the standard library already does well.
