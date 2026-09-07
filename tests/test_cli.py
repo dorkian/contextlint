@@ -200,24 +200,32 @@ def test_restore_on_a_missing_backup_errors(tmp_path, capsys):
 
 # --- packaging --------------------------------------------------------------
 
-def test_version_is_declared_once_and_agrees():
-    """pyproject and __init__ must not drift; the release workflow checks the tag
-    against pyproject, so a mismatch here would ship a package whose --version lies."""
-    import re
-    import tomllib
+def _pyproject_text() -> str:
+    """Read pyproject as text.
+
+    Deliberately not tomllib: that is 3.11+, and this project supports 3.10. A test
+    that quietly requires a newer Python than the package claims is the packaging
+    equivalent of an install command nobody can run.
+    """
     from pathlib import Path
+
+    return (Path(__file__).resolve().parents[1] / "pyproject.toml").read_text()
+
+
+def test_version_is_declared_once_and_agrees():
+    """The release workflow checks the tag against pyproject, so a drift here would
+    ship a package whose --version lies about itself."""
+    import re
 
     import contextlint
 
-    root = Path(__file__).resolve().parents[1]
-    packaged = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
-    assert contextlint.__version__ == packaged
+    m = re.search(r'^version\s*=\s*"([^"]+)"', _pyproject_text(), re.M)
+    assert m, "no version in pyproject.toml"
+    assert contextlint.__version__ == m.group(1)
 
 
 def test_console_script_is_wired_to_main():
-    import tomllib
-    from pathlib import Path
+    import re
 
-    root = Path(__file__).resolve().parents[1]
-    scripts = tomllib.loads((root / "pyproject.toml").read_text())["project"]["scripts"]
-    assert scripts["contextlint"] == "contextlint.cli:main"
+    m = re.search(r'^contextlint\s*=\s*"([^"]+)"', _pyproject_text(), re.M)
+    assert m and m.group(1) == "contextlint.cli:main"

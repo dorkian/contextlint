@@ -56,23 +56,9 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       # The README once said `uvx contextlint` while the package was not on PyPI,
-      # so the headline command failed for every reader. A project whose whole claim
-      # is "our numbers are reproducible" cannot ship an install line nobody can run.
-      - name: A bare PyPI install must not be documented unless PyPI has the package
-        run: |
-          set -euo pipefail
-          claims=$(grep -rnE '(uvx|pipx run) contextlint\b|(pip|pipx|uv tool) install +.?contextlint' \
-                    --include='*.md' --include='*.yml' . \
-                    | grep -v 'git+' | grep -v '^\./\.github/workflows/ci\.yml:' || true)
-          if [ -n "$claims" ]; then
-            code=$(curl -s -o /dev/null -w '%{http_code}' https://pypi.org/pypi/contextlint/json)
-            if [ "$code" != "200" ]; then
-              echo "::error::These lines promise a PyPI install, but PyPI returned $code for contextlint:"
-              echo "$claims"
-              exit 1
-            fi
-          fi
-          echo "install commands are consistent with what is published"
+      # so the headline command failed for every reader.
+      - name: Documented install commands must actually work
+        run: python scripts/check_install_claims.py
 
       - name: The package installs from a clean checkout
         run: |

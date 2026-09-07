@@ -1,8 +1,8 @@
 # Releasing
 
 `contextlint` is not on PyPI yet. Until it is, the README documents git installs only — a CI
-job (`documented install commands are true`) fails the build if any file promises a bare
-`pip install contextlint` while PyPI does not actually serve it.
+job runs `scripts/check_install_claims.py`, which fails the build if any fenced command in
+the docs promises a bare PyPI install while PyPI does not serve the package.
 
 Publishing flips that on. After the first successful release the README's install section can
 be simplified to `uvx contextlint`, and the guard will start allowing it automatically.
