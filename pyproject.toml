@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "contextlint"
+name = "dorkian-context-lint"
 version = "0.1.0"
 description = "Audit what your AI coding assistant loads before you type: token cost, dead weight, and MCP security risk — across Claude Code, Codex, Cursor and Copilot."
 readme = "README.md"
