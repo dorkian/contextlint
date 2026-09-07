@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest an idea, a new assistant adapter, or a new configuration check
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please check the [ROADMAP.md](https://github.com/dorkian/contextlint/blob/main/ROADMAP.md) and open issues first to see if this is already planned or discussed.
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      options:
+        - New Assistant Adapter (e.g. Windsurf, Zed, Aider)
+        - Context Efficiency & Token Pricing
+        - Configuration Hygiene & Deduplication
+        - MCP Configuration Security Check
+        - CLI / Dashboard / Reporting
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: A clear and concise description of the friction, missing check, or configuration risk.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: How should this work? If proposing a check, what pattern should it detect and what remediation should it suggest?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any alternative solutions or workarounds you have considered.

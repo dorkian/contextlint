@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import __version__
-from .adapters import ADAPTERS
+from .adapters import ADAPTERS, ADAPTERS_BY_NAME
 from .audit import run_audit
 from .checks import CHECKS, Policy
 from .models import CRITICAL, HIGH
@@ -142,11 +142,48 @@ def _common(p: argparse.ArgumentParser) -> None:
     p.add_argument("--mcp-probe", action="store_true",
                    help="measure real tool schemas by starting each MCP server (executes their commands)")
     p.add_argument("--probe-timeout", type=float, default=20.0)
+    p.add_argument("--mcp-probe-server", action="append", dest="probe_servers", metavar="NAME",
+                   help="with --mcp-probe, probe only this server; repeatable (default: every configured server)")
+    p.add_argument("--no-network", action="store_true",
+                   help="with --mcp-probe, probe only local stdio servers; skip anything reached over HTTP/SSE")
     p.add_argument("--check", action="append", dest="only_checks", metavar="ID",
                    choices=[c.id for c in CHECKS], help="run only this check; repeatable")
     p.add_argument("--skip-check", action="append", dest="skip_checks", metavar="ID",
                    choices=[c.id for c in CHECKS], help="skip this check; repeatable")
     p.add_argument("--yes", action="store_true", help="skip interactive confirmation prompts")
+
+
+def _mcp_preflight(args) -> list[str]:
+    """What --mcp-probe is about to run, discovered statically — no server is
+    started to build this list, so it is safe to show before the user decides."""
+    from .discovery import Workspace
+    from .mcp_probe import describe
+    from .models import dedupe_assets
+
+    ws = Workspace.resolve(args.path, include_global=not args.no_global)
+    selected = (
+        [ADAPTERS_BY_NAME[a] for a in args.assistants if a in ADAPTERS_BY_NAME]
+        if args.assistants else ADAPTERS
+    )
+    assets = []
+    for adapter in selected:
+        if adapter.detect(ws):
+            assets += adapter.collect(ws)
+    assets = dedupe_assets(assets)
+
+    wanted = set(args.probe_servers) if args.probe_servers else None
+    lines = []
+    for a in assets:
+        if a.kind != "mcp_server" or (wanted is not None and a.name not in wanted):
+            continue
+        is_network = not (a.meta.get("transport") == "stdio" or a.meta.get("command"))
+        if args.no_network and is_network:
+            lines.append(f"  {a.name}: SKIPPED — --no-network, reached over the network")
+            continue
+        env_names = sorted((a.meta.get("env") or {}).keys())
+        env_part = f"  [env: {', '.join(env_names)}]" if env_names else ""
+        lines.append(f"  {a.name}: {describe(a.meta)}{env_part}")
+    return lines
 
 
 def _audit_from_args(args) -> "object":
@@ -156,11 +193,16 @@ def _audit_from_args(args) -> "object":
         announced.append(f"  {name}: {cmd}")
 
     if args.mcp_probe and not args.yes and sys.stdin.isatty():
+        preview = _mcp_preflight(args)
         print(
-            "--mcp-probe starts every configured MCP server so their tool schemas can be measured.\n"
-            "This runs third-party code and opens network connections.",
+            "--mcp-probe starts MCP servers so their tool schemas can be measured.\n"
+            "This runs third-party code and opens network connections. Exactly what will run:",
             file=sys.stderr,
         )
+        for line in preview:
+            print(line, file=sys.stderr)
+        if not preview:
+            print("  (nothing matches — check --mcp-probe-server / --no-network)", file=sys.stderr)
         if input("Continue? [y/N] ").strip().lower() not in ("y", "yes"):
             print("Aborted. Run without --mcp-probe for a purely static audit.", file=sys.stderr)
             raise SystemExit(2)
@@ -175,6 +217,8 @@ def _audit_from_args(args) -> "object":
         session_logs=[Path(d).expanduser() for d in (args.session_logs or [])] or None,
         mcp_probe=args.mcp_probe,
         probe_timeout=args.probe_timeout,
+        probe_servers=args.probe_servers,
+        probe_no_network=args.no_network,
         only_checks=args.only_checks,
         skip_checks=args.skip_checks,
         on_probe=on_probe,

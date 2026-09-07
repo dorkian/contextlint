@@ -25,6 +25,8 @@ def run_audit(
     session_logs: list[Path] | None = None,
     mcp_probe: bool = False,
     probe_timeout: float = 20.0,
+    probe_servers: list[str] | None = None,
+    probe_no_network: bool = False,
     only_checks: list[str] | None = None,
     skip_checks: list[str] | None = None,
     on_probe: Callable[[str, str], None] | None = None,
@@ -49,7 +51,8 @@ def run_audit(
     counter = get_counter(tokenizer)
 
     if mcp_probe:
-        _probe_servers(assets, counter, probe_timeout, on_probe)
+        _probe_servers(assets, counter, probe_timeout, on_probe,
+                        only=probe_servers, no_network=probe_no_network)
 
     price(assets, counter)
 
@@ -83,11 +86,17 @@ def run_audit(
     )
 
 
-def _probe_servers(assets, counter, timeout, on_probe) -> None:
+def _probe_servers(assets, counter, timeout, on_probe, *, only=None, no_network=False) -> None:
     from .mcp_probe import probe  # imported here so a non-probing run never touches subprocess
 
+    wanted = set(only) if only else None
     for a in assets:
         if a.kind != "mcp_server":
+            continue
+        if wanted is not None and a.name not in wanted:
+            continue
+        if no_network and not (a.meta.get("transport") == "stdio" or a.meta.get("command")):
+            a.meta["probe_error"] = "skipped: --no-network (server reached over the network)"
             continue
         if on_probe:
             on_probe(a.name, _describe(a))

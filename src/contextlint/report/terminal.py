@@ -6,7 +6,7 @@ import os
 import shutil
 import sys
 
-from ..models import CRITICAL, HIGH, INFO, LOW, MEDIUM, Report
+from ..models import CERTAIN, CRITICAL, HIGH, INFO, LOW, MEDIUM, Report
 
 SEV_COLOR = {CRITICAL: "\033[1;97;41m", HIGH: "\033[1;31m", MEDIUM: "\033[1;33m",
              LOW: "\033[36m", INFO: "\033[2m"}
@@ -86,13 +86,16 @@ def render_terminal(report: Report, *, verbose: bool = False, max_findings: int 
         for s in (CRITICAL, HIGH, MEDIUM, LOW, INFO)
     )
     out.append(c("FINDINGS", BOLD) + f"   {summary}")
+    out.append(f"  {DIM if color else ''}'certain' = removing it cannot change behaviour; "
+               f"unmarked findings are judgement calls{RESET if color else ''}")
     out.append("")
 
     shown = report.sorted_findings()
     for f in shown[:max_findings]:
         tag = c(f" {SEV_LABEL[f.severity]} ", SEV_COLOR[f.severity])
+        conf = c(" certain ", "\033[1;32m") if f.confidence == CERTAIN else ""
         cost = f"  {DIM if color else ''}-{f.tokens_at_stake:,} tok{RESET if color else ''}" if f.tokens_at_stake else ""
-        out.append(f"{tag} {f.title}{cost}")
+        out.append(f"{tag}{conf} {f.title}{cost}")
         for line in _wrap(f.detail, width - 7):
             out.append(f"       {DIM if color else ''}{line}{RESET if color else ''}")
         if f.remediation:

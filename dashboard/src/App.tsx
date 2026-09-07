@@ -539,6 +539,7 @@ export default function App() {
     if (!data.meta.usage?.available) {
       list.push('No session history was found, so nothing distinguishes an unused asset from a heavily used one.');
     }
+    list.push('Security findings audit static configuration declarations. Contextlint is not a penetration test and cannot guarantee server implementation safety.');
     return list;
   }, [data]);
 
@@ -1126,6 +1127,15 @@ export default function App() {
             <div key={`${f.check}-${f.path ?? f.title}-${idx}`} className={`f-card ${tone}`}>
               <div className="top">
                 <span className="sev">{f.severity}</span>
+                {f.confidence === 'certain' ? (
+                  <span className="brand-badge" style={{ background: 'var(--used-subtle)', color: 'var(--used)', border: '1px solid var(--used)' }} title="Deterministic fact: removing this cannot change behavior">
+                    Certain
+                  </span>
+                ) : (
+                  <span className="brand-badge" style={{ background: 'var(--line)', color: 'var(--mute)' }} title="Judgment call: requires review before acting">
+                    Review
+                  </span>
+                )}
                 <span className="t">{f.title}</span>
                 {f.tokens_at_stake > 0 && (
                   <span className="cost">−{f.tokens_at_stake.toLocaleString()} tok</span>

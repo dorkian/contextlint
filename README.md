@@ -14,24 +14,64 @@
   <img alt="MIT licence" src="https://img.shields.io/badge/licence-MIT-52514e?style=flat-square&labelColor=1a1a19">
 </p>
 
+### Audit what your AI coding assistant loads before you type.
+Find hidden context cost, unused skills and rules, risky MCP configuration, and configuration drift across **Claude Code**, **Cursor**, **Codex**, and **GitHub Copilot**.
+
 ```bash
-uvx --from dorkian-context-lint contextlint
+# Run immediately without installing anything:
+uvx --from dorkian-context-lint contextlint audit --no-global
+
+# Or install on your PATH:
+pip install dorkian-context-lint
 ```
 
-<sub>No API key. No network. No telemetry. No dependencies.</sub>
+<p align="left">
+  • <b>Offline by default</b> — no API key, telemetry, or network required<br>
+  • <b>Measures loading mode</b>, not misleading file size on disk<br>
+  • <b>Correlates real session usage</b> to identify genuinely unused skills and tools<br>
+  • <b>Produces terminal, JSON, and self-contained HTML reports</b><br>
+  • <b>Safely fixes</b> only byte-identical duplicates and empty assets, with backups and undo
+</p>
+
+> *Contextlint measures what your assistant actually receives before each prompt — not just how large your configuration files are.*
 
 <sub>
+<a href="#quickstart-and-what-it-looks-like">Visual report</a> ·
+<a href="#three-product-pillars">Three Pillars</a> ·
 <a href="#install">Install</a> ·
-<a href="#install-via-your-ai-assistant">Install via AI assistant</a> ·
 <a href="#usage">Usage</a> ·
-<a href="#keeping-it-healthy-over-time">Scheduled health checks</a> ·
+<a href="#scheduled-health-checks">Scheduled health checks</a> ·
 <a href="#live-dashboard">Dashboard</a> ·
-<a href="#reproducing-the-numbers">Reproducing the numbers</a> ·
-<a href="#how-it-compares">How it compares</a> ·
-<a href="#privacy">Privacy</a>
+<a href="#exit-codes">Exit codes</a> ·
+<a href="#reproducing-the-numbers">Reproducing numbers</a> ·
+<a href="#privacy-and-security">Privacy & Security</a>
 </sub>
 
 </div>
+
+---
+
+## Quickstart and what it looks like
+
+```console
+$ contextlint audit --no-global
+```
+
+<img alt="Terminal output: contextlint audit against the bundled fixture workspace, showing the always-on context budget, a breakdown by assistant and asset kind, and critical findings for a credential passed as a command-line argument, invisible characters in a skill description, and a plaintext credential in MCP config." src="docs/assets/terminal.svg" width="900">
+
+`--html report.html` writes a self-contained visual report: a treemap of always-on cost coloured by whether you have ever invoked the asset, a cost-against-usage scatter, and filterable findings. One file, no CDN, works offline, respects your system theme.
+
+---
+
+## Three Product Pillars
+
+Contextlint is a local health check and **configuration security scanner for AI coding assistants**:
+
+| Pillar | User Question | What it checks |
+|---|---|---|
+| **Context Efficiency** | *“What am I paying to load?”* | Always-on token floor, oversized descriptions, duplicated instructions, real MCP tool-schema costs. |
+| **Configuration Hygiene** | *“What is stale or redundant?”* | Unused skills, shadowed rule names, empty assets, and configuration drift since last audit. |
+| **Security Exposure** | *“What can this assistant environment access or execute unsafely?”* | Unauthenticated remote endpoints, credentials in `argv`/`env`, unpinned package chains, root filesystem scope, hidden Unicode characters. |
 
 ---
 
@@ -47,12 +87,6 @@ Existing tools price a skill by its size on disk. But a well-formed skill's body
 </picture>
 
 contextlint separates the two, prices them independently, and refuses to add together numbers that mean different things.
-
-## What it looks like
-
-<img alt="Terminal output: contextlint audit against the bundled fixture workspace, showing the always-on context budget, a breakdown by assistant and asset kind, and critical findings for a credential passed as a command-line argument, invisible characters in a skill description, and a plaintext credential in MCP config." src="docs/assets/terminal.svg" width="900">
-
-`--html report.html` writes a self-contained visual report: a treemap of always-on cost coloured by whether you have ever invoked the asset, a cost-against-usage scatter, and filterable findings. One file, no CDN, works offline, respects your system theme.
 
 ### Live Dashboard
 
@@ -72,7 +106,7 @@ Open `http://localhost:3535`. Point it at any project by clicking the path in th
 
 ## Install
 
-On PyPI. Python 3.10+, zero required dependencies.
+On PyPI. Python 3.10+, **zero required runtime dependencies**. Optional extras provide model-specific token counting when precision matters.
 
 ```bash
 # run it once, install nothing
@@ -183,6 +217,14 @@ Nothing leaves your machine — only tool-invocation names and timestamps are pa
 
 Unauthenticated remote servers · plaintext HTTP · credentials in `env`, in headers, **and in `argv`** · unpinned `npx -y` supply chains · shell-launched servers · filesystem servers rooted at `/` · blanket permission rules · and instruction-shaped text hidden in tool descriptions, including zero-width and Unicode-tag characters that render as nothing to you and as text to the model.
 
+> [!NOTE]
+> **Security boundary & non-guarantee**: Contextlint identifies known high-risk configuration patterns. It is not a penetration test, does not verify server implementation safety, and cannot guarantee that an MCP server, tool description, or agent workflow is safe. See **[SECURITY.md](SECURITY.md)** and **[docs/privacy-and-threat-model.md](docs/privacy-and-threat-model.md)**.
+
+Findings are separated into three certainty classes:
+- **Detected configuration facts**: Unauthenticated remote URLs, credentials passed in `argv`/`env`/headers, shell launch wrappers, root `/` path exposure, byte-identical duplicate files.
+- **Heuristic pattern detections**: Instruction-shaped tool descriptions, obfuscated Unicode-tag characters, zero-width character sequences, oversized descriptions.
+- **Unverified runtime risks**: Upstream package compromises, runtime server implementation vulnerabilities, and dynamic prompt injection from tool outputs are outside configuration audit scope.
+
 It also measures what a server actually costs, which configuration alone cannot tell you:
 
 <picture>
@@ -193,6 +235,15 @@ It also measures what a server actually costs, which configuration alone cannot 
 ### 3. It separates what is certain from what is a judgement call
 
 Deleting a byte-identical duplicate cannot change behaviour. Deleting a skill you have not invoked in 90 days might.
+
+| Finding Type | Confidence | Suggested Action |
+|---|---|---|
+| Byte-identical duplicate | **Certain** | Safe to auto-remove via `fix --apply` |
+| Empty configuration asset | **Certain** | Safe to auto-remove |
+| Plaintext HTTP / credential in argv | **Certain** | Fix configuration immediately |
+| Skill never invoked in 90 days | **Review** | Disable or archive after confirming with user |
+| Large always-on instruction file | **Review** | Move reference material into on-demand skills |
+| Instruction-shaped tool description | **Heuristic** | Inspect for potential prompt injection |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/savings-dark.svg">
@@ -220,6 +271,14 @@ contextlint restore <backup-dir>       # undo a fix run, on any platform
 contextlint watch --every 6h           # keep checking, and report what changed
 contextlint watch --once --quiet       # one check with drift — the form for cron
 ```
+
+### Canonical exit codes
+
+| Exit Code | Condition | Meaning |
+|:---:|---|---|
+| `0` | Clean audit | No findings at or above configured thresholds (`--fail-on`), or drift within limits (`--fail-at`). |
+| `1` | Threshold exceeded | Open critical findings, new high-severity findings, or findings at or above `--fail-on`. |
+| `2` | Tool or safety error | Invalid CLI arguments, confirmation aborted on a TTY, or `fix --apply` refused due to an uncommitted git working tree. |
 
 ### Keeping it healthy over time
 
@@ -384,21 +443,29 @@ The two niches are each crowded; the intersection was empty. `gh search repos "c
 
 ---
 
-## Privacy
+## Privacy and Security
 
 The default path reads local files, makes no network connection, and writes nothing. Asset *content* never appears in the JSON or HTML output — only names, paths and counts.
 
-Two modes are exceptions, both opt-in and both announced at the point of use: `--mcp-probe` starts your configured servers, and `--tokenizer anthropic` sends configuration text to the Anthropic API. See [SECURITY.md](SECURITY.md).
+- Session transcripts are parsed for tool-invocation names and timestamps only — never prompt or response text.
+- Pass `--no-usage` (or `--no-global`) to skip reading transcripts entirely.
+- Two modes are exceptions, both opt-in and both announced at the point of use: `--mcp-probe` starts your configured servers, and `--tokenizer anthropic` sends configuration text to the Anthropic API.
+- For complete operational guarantees, inspected source paths, and the project's threat model, see **[docs/privacy-and-threat-model.md](docs/privacy-and-threat-model.md)** and **[SECURITY.md](SECURITY.md)**.
+
+## Project & Community
+
+- **[ROADMAP.md](ROADMAP.md)**: Current focus, upcoming adapters/checks, and long-term milestones.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)**: How to add an assistant adapter, contribute checks, or submit anonymized fixtures.
+- **[SPEC.md](SPEC.md)**: Full design contract and architectural constraints.
+- **[docs/case-study.md](docs/case-study.md)**: The real-world dogfood audit narrative.
 
 ## Design notes
 
 - **One adapter per assistant, one file per check.** Adding an assistant is one file and one registry entry.
-- **No required dependencies.** A tool whose thesis is that dependencies have a cost should demonstrate that it believes it.
+- **Zero required runtime dependencies.** A tool whose thesis is that dependencies have a cost should demonstrate that it believes it.
 - **Findings are signals, not verdicts.** Every security finding names the pattern it matched and why, so you can dismiss it in ten seconds when it is wrong.
 - **Never claim a percentage the harness cannot reproduce.**
 - **Charts are generated, not drawn.** `docs/assets/make_charts.py` builds every graphic above from measured JSON, and CI fails if a committed chart no longer matches its data.
-
-Full contract in [SPEC.md](SPEC.md). The dogfood audit is written up in [docs/case-study.md](docs/case-study.md).
 
 ## Related work
 
