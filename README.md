@@ -7,6 +7,7 @@
 
 <p>
   <a href="https://github.com/dorkian/contextlint/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/dorkian/contextlint/ci.yml?branch=main&style=flat-square&label=ci&labelColor=1a1a19&color=2a78d6"></a>
+  <a href="https://pypi.org/project/dorkian-context-lint/"><img alt="PyPI" src="https://img.shields.io/pypi/v/dorkian-context-lint?style=flat-square&label=pypi&labelColor=1a1a19&color=2a78d6"></a>
   <img alt="Python 3.10+" src="https://img.shields.io/badge/python-3.10%2B-2a78d6?style=flat-square&labelColor=1a1a19">
   <img alt="dependencies: none" src="https://img.shields.io/badge/dependencies-none-1baf7a?style=flat-square&labelColor=1a1a19">
   <img alt="read-only by default" src="https://img.shields.io/badge/default-read--only-1baf7a?style=flat-square&labelColor=1a1a19">
@@ -14,7 +15,7 @@
 </p>
 
 ```bash
-uvx --from git+https://github.com/dorkian/contextlint contextlint
+uvx --from dorkian-context-lint contextlint
 ```
 
 <sub>No API key. No network. No telemetry. No dependencies.</sub>
@@ -71,36 +72,53 @@ Open `http://localhost:3535`. Point it at any project by clicking the path in th
 
 ## Install
 
-Not on PyPI yet — install from the repository. Python 3.10+, zero required dependencies.
+On PyPI. Python 3.10+, zero required dependencies.
 
 ```bash
 # run it once, install nothing
-uvx --from git+https://github.com/dorkian/contextlint contextlint
+uvx --from dorkian-context-lint contextlint
 
 # or put `contextlint` on your PATH
-uv tool install git+https://github.com/dorkian/contextlint
-pipx install git+https://github.com/dorkian/contextlint
-pip install git+https://github.com/dorkian/contextlint
+uv tool install dorkian-context-lint
+pipx install dorkian-context-lint
+pip install dorkian-context-lint
 ```
+
+The **distribution name is `dorkian-context-lint`** — PyPI's namespace-similarity check rejected the shorter `contextlint` at registration time. The installed **command is unaffected: it's still `contextlint`**, exactly as above. `uvx <name>` and `pip install <name>` both key off the distribution name, so this is the one place that name actually matters; everywhere else in this README, "contextlint" means the tool.
 
 Two optional extras, neither needed for the default path:
 
 ```bash
-uv tool install "dorkian-context-lint[exact] @ git+https://github.com/dorkian/contextlint"  # tiktoken, measured counts
-uv tool install "dorkian-context-lint[api] @ git+https://github.com/dorkian/contextlint"    # anthropic, for --tokenizer anthropic
+uv tool install "dorkian-context-lint[exact]"  # tiktoken, measured counts
+uv tool install "dorkian-context-lint[api]"    # anthropic, for --tokenizer anthropic
 ```
 
-The distribution name is `dorkian-context-lint` — PyPI's namespace-similarity check rejects the shorter `contextlint`. The installed command is unaffected: it's still `contextlint`, matching everything above.
+<details>
+<summary><b>Installing from git instead — a specific commit, a fork, or before the next release lands</b></summary>
+
+<br>
+
+```bash
+uvx --from git+https://github.com/dorkian/contextlint contextlint
+uv tool install git+https://github.com/dorkian/contextlint
+pipx install git+https://github.com/dorkian/contextlint
+pip install git+https://github.com/dorkian/contextlint
+
+# with an extra, from git:
+uv tool install "dorkian-context-lint[exact] @ git+https://github.com/dorkian/contextlint"
+```
+
+A git install pins the exact commit it was built from, unlike a version-tagged PyPI release.
+
+</details>
 
 <details>
 <summary><b>Updating, and working on it locally</b></summary>
 
 <br>
 
-A git install pins the commit it was built from, so upgrade explicitly:
-
 ```bash
-uv tool upgrade contextlint      # or: uv tool install --force git+https://...
+uv tool upgrade dorkian-context-lint
 ```
 
 To hack on it:
@@ -117,16 +135,16 @@ Cutting a release is a maintainer task, documented in [RELEASING.md](RELEASING.m
 
 ### Install via your AI assistant
 
-Zero required dependencies and a single git URL means there is nothing for an assistant to get wrong. Paste this into Claude Code, Cursor, Copilot, Codex CLI, or anything else with terminal access:
+Zero required dependencies and one PyPI package means there's little for an assistant to get wrong — the one thing worth spelling out is that the package name doesn't match the command. Paste this into Claude Code, Cursor, Copilot, Codex CLI, or anything else with terminal access:
 
 ```text
-Install the contextlint CLI from https://github.com/dorkian/contextlint. It is not
-published to PyPI yet, so do not run a bare `pip install contextlint` — it will 404.
-Install directly from git instead: use `uv tool install
-git+https://github.com/dorkian/contextlint` if uv is available, otherwise `pipx install
-git+https://github.com/dorkian/contextlint`, otherwise `pip install --user
-git+https://github.com/dorkian/contextlint`. Then run `contextlint --version` to confirm
-it worked, and `contextlint audit --no-global` in this project to show me a real report.
+Install the contextlint CLI. On PyPI it's published as `dorkian-context-lint` — the
+package name and the command name differ (a namespace-similarity check on PyPI rejected
+the shorter name), so a bare `pip install contextlint` or `uvx contextlint` will 404;
+that's expected, not a sign anything is broken. Use `uv tool install dorkian-context-lint`
+if uv is available, otherwise `pipx install dorkian-context-lint`, otherwise `pip install
+--user dorkian-context-lint`. Then run `contextlint --version` to confirm it worked, and
+`contextlint audit --no-global` in this project to show me a real report.
 ```
 
 <details>

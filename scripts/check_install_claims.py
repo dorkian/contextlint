@@ -60,8 +60,15 @@ EXEMPT = ("git+", "://", "./", "-e ", " . ", "--from")
 # "do not run `pip install contextlint`, it will 404" is the check's own warning
 # text about itself (this file's docstring, or a README section telling a reader
 # — or an AI assistant — what *not* to do). That is correct advice, not a broken
-# promise; only flag a match with no negation cue anywhere earlier in the line.
-NEGATION = re.compile(r"\b(?:do\s+not|don'?t|never|avoid|instead\s+of|rather\s+than|not\s+a\s+bare)\b", re.I)
+# promise. Two shapes of that warning exist, checked on opposite sides of the
+# match: "do not run X" leads with the cue, "X will 404" follows it. The forward
+# form is scoped to the same clause as the match (the caller splits on .;!?\n
+# before searching), not the whole rest of the line or a fixed character count —
+# either of those would conflate "X will 404" with an unrelated instruction two
+# sentences later, and a raw window can't tell them apart: in practice the two
+# gaps run about the same length either way.
+NEGATION_BEFORE = re.compile(r"\b(?:do\s+not|don'?t|never|avoid|instead\s+of|rather\s+than|not\s+a\s+bare)\b", re.I)
+NEGATION_AFTER = re.compile(r"\b(?:will\s+404|will\s+fail|won'?t\s+work|doesn'?t\s+work|fails?\b)", re.I)
 
 
 def code_lines(path: Path) -> list[tuple[int, str]]:
@@ -108,7 +115,8 @@ def main() -> int:
             m = CLAIM.search(line)
             if not m or any(e in line for e in EXEMPT):
                 continue
-            if NEGATION.search(line[: m.start()]):
+            same_clause = re.split(r"[.;!?\n]", line[m.end():], maxsplit=1)[0]
+            if NEGATION_BEFORE.search(line[: m.start()]) or NEGATION_AFTER.search(same_clause):
                 continue
             claims.append(f"{path.relative_to(ROOT)}:{lineno}: {line.strip()}")
 
