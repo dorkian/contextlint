@@ -14,7 +14,7 @@
 </p>
 
 ```bash
-uvx contextlint
+uvx --from git+https://github.com/dorkian/contextlint contextlint
 ```
 
 <sub>No API key. No network. No telemetry. No dependencies.</sub>
@@ -44,13 +44,44 @@ contextlint separates the two, prices them independently, and refuses to add tog
 
 ## Install
 
+Not on PyPI yet — install from the repository. Python 3.10+, zero required dependencies.
+
 ```bash
-uvx contextlint                  # run it without installing
-pipx install contextlint         # or install it
-pip install contextlint[exact]   # + tiktoken, for measured rather than estimated counts
+# run it once, install nothing
+uvx --from git+https://github.com/dorkian/contextlint contextlint
+
+# or put `contextlint` on your PATH
+uv tool install git+https://github.com/dorkian/contextlint
+pipx install git+https://github.com/dorkian/contextlint
+pip install git+https://github.com/dorkian/contextlint
 ```
 
-Python 3.10+. Zero required dependencies.
+For measured rather than estimated token counts, add the `exact` extra:
+
+```bash
+uv tool install "contextlint[exact] @ git+https://github.com/dorkian/contextlint"
+```
+
+<details>
+<summary><b>Updating, and working on it locally</b></summary>
+
+<br>
+
+A git install pins the commit it was built from, so upgrade explicitly:
+
+```bash
+uv tool upgrade contextlint      # or: uv tool install --force git+https://...
+```
+
+To hack on it:
+
+```bash
+git clone https://github.com/dorkian/contextlint && cd contextlint
+pip install -e ".[dev]"
+python -m pytest tests -q
+```
+
+</details>
 
 ---
 

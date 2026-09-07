@@ -12,13 +12,14 @@ decides what to do about it.
 ## Run
 
 ```bash
-uvx contextlint --format json
+uvx --from git+https://github.com/dorkian/contextlint contextlint --format json
 ```
 
 Add `--html /tmp/contextlint.html` when the user would benefit from the visual report (treemap
 of always-on cost, cost-against-usage scatter, filterable findings).
 
-If `uvx` is unavailable, fall back to `pipx run contextlint` or `python -m contextlint`.
+Once installed with `uv tool install`, the command is simply `contextlint`. If neither is
+available, fall back to `python -m contextlint` from a checkout.
 
 ## Reading the output
 
@@ -44,8 +45,8 @@ saving the user has not actually applied yet.
 If the user wants this watched rather than answered once:
 
 ```bash
-uvx contextlint watch --once --quiet   # one check with drift; put this in cron
-uvx contextlint watch --every 6h       # or keep it running in a terminal
+uvx --from git+https://github.com/dorkian/contextlint contextlint watch --once --quiet
+uv tool install git+https://github.com/dorkian/contextlint   # then just: contextlint watch --every 6h
 ```
 
 `--once` is the right primitive when something else owns the scheduling — cron, launchd,

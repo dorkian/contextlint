@@ -108,7 +108,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install contextlint
+      - run: pip install git+https://github.com/dorkian/contextlint
       - uses: actions/cache@v4
         with:
           path: .contextlint-history.jsonl

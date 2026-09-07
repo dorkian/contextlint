@@ -196,3 +196,28 @@ def test_restore_on_a_missing_backup_errors(tmp_path, capsys):
     code = main(["restore", str(tmp_path / "nope")])
     capsys.readouterr()
     assert code == 2
+
+
+# --- packaging --------------------------------------------------------------
+
+def test_version_is_declared_once_and_agrees():
+    """pyproject and __init__ must not drift; the release workflow checks the tag
+    against pyproject, so a mismatch here would ship a package whose --version lies."""
+    import re
+    import tomllib
+    from pathlib import Path
+
+    import contextlint
+
+    root = Path(__file__).resolve().parents[1]
+    packaged = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
+    assert contextlint.__version__ == packaged
+
+
+def test_console_script_is_wired_to_main():
+    import tomllib
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    scripts = tomllib.loads((root / "pyproject.toml").read_text())["project"]["scripts"]
+    assert scripts["contextlint"] == "contextlint.cli:main"

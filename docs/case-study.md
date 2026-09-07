@@ -101,7 +101,7 @@ have been meaningless.
 ## Method
 
 ```bash
-uvx contextlint --mcp-probe --html report.html
+uvx --from git+https://github.com/dorkian/contextlint contextlint --mcp-probe --html report.html
 ```
 
 Token counts from the offline heuristic, whose out-of-sample aggregate error against `tiktoken`
