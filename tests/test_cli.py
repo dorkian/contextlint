@@ -72,3 +72,127 @@ def test_assistant_filter(fixture_path, capsys):
           "--format", "json"])
     data = json.loads(capsys.readouterr().out)
     assert data["meta"]["assistants_detected"] == ["cursor"]
+
+
+# --- watch ------------------------------------------------------------------
+
+@pytest.mark.parametrize("value,seconds", [
+    ("30s", 30), ("15m", 900), ("6h", 21600), ("1d", 86400), ("90", 90), ("1.5h", 5400),
+])
+def test_interval_parsing(value, seconds):
+    from contextlint.cli import duration
+
+    assert duration(value) == seconds
+
+
+@pytest.mark.parametrize("value", ["", "abc", "5x", "1", "-3m", "0"])
+def test_invalid_intervals_are_rejected(value):
+    import argparse
+
+    from contextlint.cli import duration
+
+    with pytest.raises(argparse.ArgumentTypeError):
+        duration(value)
+
+
+@pytest.mark.parametrize("value,fraction", [("5%", 0.05), ("5", 0.05), ("0.05", 0.05), ("100%", 1.0)])
+def test_percent_parsing(value, fraction):
+    from contextlint.cli import percent
+
+    assert percent(value) == pytest.approx(fraction)
+
+
+def test_watch_once_writes_history_and_reports_drift(fixture_path, tmp_path, capsys):
+    h = tmp_path / "h.jsonl"
+    args = [str(fixture_path), "--no-global", "--no-usage", "--once", "--history", str(h)]
+
+    main(["watch", *args])
+    first = capsys.readouterr().out
+    assert "first run" in first
+    assert h.exists()
+
+    main(["watch", *args])
+    second = capsys.readouterr().out
+    assert "no change" in second
+    assert len(h.read_text().strip().splitlines()) == 2
+
+
+def test_watch_json_is_one_object_per_check(fixture_path, tmp_path, capsys):
+    h = tmp_path / "h.jsonl"
+    main(["watch", str(fixture_path), "--no-global", "--no-usage", "--once",
+          "--history", str(h), "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] in ("ok", "warn", "fail")
+    assert "snapshot" in payload and "drift" in payload
+
+
+def test_watch_exit_code_reflects_health(fixture_path, tmp_path, capsys):
+    """The fixture carries critical findings, so a health check over it must fail."""
+    h = tmp_path / "h.jsonl"
+    code = main(["watch", str(fixture_path), "--no-global", "--no-usage", "--once",
+                 "--history", str(h)])
+    capsys.readouterr()
+    assert code == 1
+
+
+def test_watch_is_clean_on_a_healthy_project(tmp_path, capsys):
+    (tmp_path / "AGENTS.md").write_text("# Project\nBuild with make.\n")
+    code = main(["watch", str(tmp_path), "--no-global", "--no-usage", "--once",
+                 "--history", str(tmp_path / "h.jsonl")])
+    capsys.readouterr()
+    assert code == 0
+
+
+def test_watch_quiet_says_nothing_when_healthy(tmp_path, capsys):
+    (tmp_path / "AGENTS.md").write_text("# Project\nBuild with make.\n")
+    main(["watch", str(tmp_path), "--no-global", "--no-usage", "--once", "--quiet",
+          "--history", str(tmp_path / "h.jsonl")])
+    assert capsys.readouterr().out.strip() == ""
+
+
+def test_watch_max_growth_fails_the_check(tmp_path, fixture_path, capsys):
+    import shutil
+
+    ws = tmp_path / "ws"
+    shutil.copytree(fixture_path, ws)
+    h = tmp_path / "h.jsonl"
+    common = ["watch", str(ws), "--no-global", "--no-usage", "--once", "--history", str(h),
+              "--warn-at", "90%", "--fail-at", "95%", "--max-growth", "5"]
+
+    main(common)
+    capsys.readouterr()
+
+    big = ws / ".claude" / "skills" / "grower"
+    big.mkdir(parents=True)
+    big.joinpath("SKILL.md").write_text(
+        "---\nname: grower\ndescription: " + "a much longer description. " * 20 + "\n---\nbody\n"
+    )
+    code = main(common)
+    out = capsys.readouterr().out
+    assert code == 1
+    assert "grew by" in out
+
+
+# --- restore ----------------------------------------------------------------
+
+def test_restore_command_round_trip(tmp_path, fixture_path, capsys):
+    import shutil
+
+    ws = tmp_path / "ws"
+    shutil.copytree(fixture_path, ws)
+    dupes = list(ws.rglob("alpha/SKILL.md"))
+    assert len(dupes) >= 2
+
+    main(["fix", str(ws), "--no-global", "--no-usage", "--apply", "--allow-dirty", "--yes"])
+    out = capsys.readouterr().out
+    assert "contextlint restore" in out
+
+    backup = next((ws / ".contextlint-backups").iterdir())
+    assert main(["restore", str(backup)]) == 0
+    assert "Restored" in capsys.readouterr().out
+
+
+def test_restore_on_a_missing_backup_errors(tmp_path, capsys):
+    code = main(["restore", str(tmp_path / "nope")])
+    capsys.readouterr()
+    assert code == 2

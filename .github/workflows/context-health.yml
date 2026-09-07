@@ -1,0 +1,47 @@
+# contextlint watching its own agent configuration.
+#
+# Dogfood: this repository ships skills and MCP config of its own, and this job is
+# what stops them quietly growing. It fails on any open critical finding, any new
+# high-severity finding, or more than 2,000 tokens of growth between runs.
+name: context health
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".claude/**"
+      - ".agents/**"
+      - ".cursor/**"
+      - ".github/copilot-instructions.md"
+      - ".github/instructions/**"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".mcp.json"
+      - "skill/**"
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e .
+
+      # Carry the previous snapshot forward so the run reports drift, not just totals.
+      - uses: actions/cache@v4
+        with:
+          path: .contextlint-history.jsonl
+          key: contextlint-history-${{ github.run_id }}
+          restore-keys: contextlint-history-
+
+      # --no-global: a runner has no personal ~/.claude, so including it would compare
+      # a machine that has your global skills against one that does not.
+      - name: Check
+        run: contextlint watch --once --no-global --max-growth 2000

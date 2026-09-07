@@ -1,8 +1,11 @@
 import shutil
 import subprocess
+from pathlib import Path
+
+import pytest
 
 from contextlint.audit import run_audit
-from contextlint.fix import apply_plan, build_plan, git_is_clean, render_plan
+from contextlint.fix import _safe_name, apply_plan, build_plan, git_is_clean, render_plan, restore
 
 
 def _workspace(tmp_path, fixture_path):
@@ -39,11 +42,14 @@ def test_apply_is_reversible(tmp_path, fixture_path):
     assert removed == len(targets)
     assert not any(p.exists() for p in targets)
 
-    restore = backup / "restore.sh"
-    assert restore.exists() and restore.stat().st_mode & 0o111
+    assert (backup / "manifest.json").exists()
+    assert (backup / "restore.sh").exists()
 
-    subprocess.run(["sh", str(restore)], check=True, capture_output=True)
-    assert all(p.exists() for p in targets), "restore.sh must put every file back"
+    # Restore through the manifest, not the shell script: the undo has to work on
+    # Windows too, where `sh` may not exist at all.
+    restored, skipped = restore(backup)
+    assert restored and not skipped
+    assert all(p.exists() for p in targets), "restore must put every file back"
 
 
 def test_git_guard_reports_dirty_tree(tmp_path):
@@ -80,3 +86,44 @@ def test_plan_skips_paths_that_vanished(tmp_path, fixture_path):
     plan = build_plan(report)
     assert not plan.deletions
     assert plan.skipped
+
+
+def test_backup_name_is_portable():
+    """A Windows absolute path must not survive into the backup filename.
+
+    Leaving `C:\\Users\\...` intact makes the backup destination resolve to the
+    source path itself, so `fix --apply` silently backs a file up over itself and
+    then declines to delete anything.
+    """
+    from pathlib import PureWindowsPath
+
+    name = _safe_name(Path("/home/u/ws/.claude/skills/alpha"))
+    assert "/" not in name and name.startswith("home__u")
+
+    # simulate the Windows shape without needing to run on Windows
+    winish = _safe_name(Path(*PureWindowsPath(r"C:\Users\u\ws\alpha").parts))
+    for illegal in (":", "\\", "/", "?", "*", '"'):
+        assert illegal not in winish
+
+
+def test_restore_refuses_to_clobber(tmp_path, fixture_path):
+    ws = _workspace(tmp_path, fixture_path)
+    plan = build_plan(run_audit(str(ws), include_global=False, use_usage=False))
+    targets = [p for p, _ in plan.deletions]
+    _, backup = apply_plan(plan, ws)
+
+    # someone re-creates one of the removed paths by hand before restoring
+    targets[0].parent.mkdir(parents=True, exist_ok=True)
+    targets[0].write_text("hand-written replacement")
+
+    restored, skipped = restore(backup)
+    assert skipped, "an occupied path must be left alone, not silently overwritten"
+    assert targets[0].read_text() == "hand-written replacement"
+
+    restored_forced, _ = restore(backup, force=True)
+    assert restored_forced >= 1
+
+
+def test_restore_without_a_manifest_is_an_error(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        restore(tmp_path)

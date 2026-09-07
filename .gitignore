@@ -11,3 +11,5 @@ build/
 contextlint-report.html
 contextlint-report.json
 benchmarks/results/*.json
+.contextlint-history.jsonl
+.contextlint-backups/

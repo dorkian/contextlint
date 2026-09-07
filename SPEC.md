@@ -80,6 +80,21 @@ resource of any kind. Asset *content* never appears in JSON or HTML output — o
 and counts. `--fail-on` gives CI a severity threshold. *Verified by `test_cli.py`,
 `test_models.py`.*
 
+### R11 — Health over time
+`watch` repeats the audit and reports *drift* against the previous run: token delta, findings
+that are new, findings that are gone. Snapshots persist to a JSONL history so `--once` under an
+external scheduler compares correctly. Finding fingerprints are number-insensitive, so a changed
+count inside a title does not read as one finding resolved and another appearing. Drift is
+suppressed, with a stated reason, when the two runs used different measurement modes (probed vs
+not, or a different tokenizer). Exit code is 0 for ok/warn and 1 for fail. *Verified by
+`test_history.py`, `test_cli.py`.*
+
+### R12 — Portable undo
+Backups are addressed through a manifest, not a shell script, so the undo works on Windows.
+Backup filenames are derived from absolute source paths and must contain no path separator, no
+drive anchor and no character illegal on Windows. `restore` refuses to overwrite a path that
+exists again unless forced. *Verified by `test_fix.py`, `test_cli.py`.*
+
 ### R10 — Reproducibility
 `benchmarks/run.py` regenerates every published number. Detection is measured against a fixture
 containing one instance of each defect class. Savings are measured as the difference between
@@ -88,7 +103,7 @@ are fitted on half the corpus and the error is reported on the other half.
 
 ## Definition of done
 
-1. `pytest` green, covering every requirement marked *Verified* above.
+1. `pytest` green on Linux, macOS **and Windows**, covering every requirement marked *Verified* above.
 2. `benchmarks/run.py` reports 15/15 detection and exits 0.
 3. `contextlint audit` runs on a machine with no network and no API key.
 4. All four adapters parse the fixture and produce the expected loading-mode classification.

@@ -14,6 +14,8 @@ why their agent stopped working.
 
 from __future__ import annotations
 
+import json
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -23,6 +25,11 @@ from pathlib import Path
 from .models import Finding, Report
 
 BACKUP_DIR = ".contextlint-backups"
+MANIFEST = "manifest.json"
+
+# Characters a Windows filename cannot contain. The backup name is derived from an
+# absolute source path, which on Windows starts with a drive letter and a colon.
+_ILLEGAL = re.compile(r'[<>:"/\\|?*]')
 
 
 @dataclass
@@ -104,6 +111,7 @@ def apply_plan(plan: FixPlan, root: Path) -> tuple[int, Path]:
     backup = root / BACKUP_DIR / stamp
     backup.mkdir(parents=True, exist_ok=True)
     restored: list[str] = []
+    entries: list[dict[str, str]] = []
     removed = 0
 
     for p, _ in plan.deletions:
@@ -121,7 +129,15 @@ def apply_plan(plan: FixPlan, root: Path) -> tuple[int, Path]:
             print(f"contextlint: could not remove {target}: {exc}")
             continue
         removed += 1
+        entries.append({"backup": dest.name, "original": str(target)})
         restored.append(f'cp -R "{dest.name}" "{target}"')
+
+    # Machine-readable manifest drives `contextlint restore`, which works on every
+    # platform. The shell script stays for anyone who prefers it.
+    (backup / MANIFEST).write_text(
+        json.dumps({"created": stamp, "root": str(root), "entries": entries}, indent=2),
+        encoding="utf-8",
+    )
 
     script = backup / "restore.sh"
     script.write_text(
@@ -144,4 +160,49 @@ def _only_child(p: Path) -> bool:
 
 
 def _safe_name(p: Path) -> str:
-    return str(p).lstrip("/").replace("/", "__")
+    """Flatten an absolute path into one portable filename.
+
+    The naive version — strip leading "/" and swap "/" for "__" — is a POSIX
+    assumption. On Windows it leaves ``C:\\Users\\...`` untouched, and joining that
+    onto the backup directory yields the *source path back*, so the backup copy
+    silently targets the file it is meant to preserve.
+    """
+    parts = [part for part in p.parts if part not in ("/", "\\")]
+    cleaned = [_ILLEGAL.sub("_", part).strip(". ") for part in parts]
+    return "__".join(x for x in cleaned if x) or "asset"
+
+
+def restore(backup: Path, *, force: bool = False) -> tuple[int, list[str]]:
+    """Put back everything a `fix --apply` run removed.
+
+    Reads the manifest rather than the shell script, so this works identically on
+    Windows. Refuses to overwrite anything that exists again unless forced — the
+    likeliest reason a path is occupied is that you already restored, or rewrote it
+    by hand, and clobbering that would make the undo destructive in its own right.
+    """
+    manifest = backup / MANIFEST
+    if not manifest.is_file():
+        raise FileNotFoundError(f"no {MANIFEST} in {backup}")
+    data = json.loads(manifest.read_text(encoding="utf-8"))
+
+    restored = 0
+    skipped: list[str] = []
+    for entry in data.get("entries", []):
+        src = backup / entry["backup"]
+        dst = Path(entry["original"])
+        if not src.exists():
+            skipped.append(f"{dst} — backup copy missing")
+            continue
+        if dst.exists() and not force:
+            skipped.append(f"{dst} — already exists, left alone (use --force to overwrite)")
+            continue
+        try:
+            if dst.exists():
+                shutil.rmtree(dst) if dst.is_dir() else dst.unlink()
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(src, dst) if src.is_dir() else shutil.copy2(src, dst)
+        except OSError as exc:
+            skipped.append(f"{dst} — {exc}")
+            continue
+        restored += 1
+    return restored, skipped

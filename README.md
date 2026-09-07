@@ -102,8 +102,44 @@ contextlint --fail-on high             # exit 1 in CI when something serious is 
 contextlint --mcp-probe                # measure real MCP tool schemas (starts your servers)
 contextlint checks                     # list adapters and checks
 contextlint fix                        # print a plan; changes nothing
-contextlint fix --apply                # apply it, with a backup and an undo script
+contextlint fix --apply                # apply it, with a backup and an undo
+contextlint restore <backup-dir>       # undo a fix run, on any platform
+
+contextlint watch --every 6h           # keep checking, and report what changed
+contextlint watch --once --quiet       # one check with drift — the form for cron
 ```
+
+### Keeping it healthy over time
+
+Agent config rots the way dependencies rot: nobody adds 4,000 tokens on purpose, it arrives 200 at a time. `watch` re-runs the audit and reports **drift** rather than the same numbers again.
+
+```console
+$ contextlint watch --every 6h
+2026-09-07T08:42:31+00:00  ·  OK    ·  always-on 18,703 (9.4%)  ·  +412 since last  ·  new 1  ·  findings 96
+      + MCP server '#' publishes # tools costing # tokens every turn
+```
+
+Each run appends a small snapshot to `.contextlint-history.jsonl` — aggregates and finding fingerprints, never asset content. Fingerprints strip numbers out of titles, so a server going from 26 to 27 tools is not reported as one finding resolved and another appearing.
+
+| Flag | Default | Fails the check when |
+|---|---|---|
+| `--warn-at PCT` | `5%` | always-on reaches this share of the window (warn only, exit 0) |
+| `--fail-at PCT` | `15%` | always-on reaches this share of the window |
+| `--max-growth N` | off | always-on grew by more than N tokens since the previous check |
+| — | always on | any open **critical** finding, or a **new high-severity** finding |
+
+`--once` is the form to put in cron, systemd, launchd or a scheduled CI job: something else owns the scheduling, and contextlint still knows what the numbers were yesterday. `--quiet` prints nothing while healthy, so cron only mails you when it is not. Exit code is `0` for ok and warn, `1` for fail.
+
+Ready-made snippets for cron, launchd, systemd, GitHub Actions and pre-commit are in **[docs/scheduling.md](docs/scheduling.md)**. This repository runs the check on itself in [`.github/workflows/context-health.yml`](.github/workflows/context-health.yml).
+
+<details>
+<summary><b>Why drift is sometimes suppressed instead of reported</b></summary>
+
+<br>
+
+Switching `--mcp-probe` on, or changing `--tokenizer`, changes *what is being measured*. Comparing a probed run against an unprobed one would report a multi-thousand-token swing that never happened, so `watch` says `measurement mode changed` and reports no drift for that tick rather than inventing one.
+
+</details>
 
 <details>
 <summary><b>Why MCP tool schemas are unmeasured by default</b></summary>
@@ -125,7 +161,7 @@ It only removes what is provably safe: byte-identical duplicates and empty asset
 
 1. It prints a plan and changes nothing without `--apply`.
 2. It refuses to run on a dirty git tree, so `git checkout .` is always a valid undo.
-3. It copies every removed file into `.contextlint-backups/<timestamp>/` with a generated `restore.sh`, so the undo works outside git too.
+3. It copies every removed file into `.contextlint-backups/<timestamp>/` with a manifest and a generated `restore.sh`, so the undo works outside git too. `contextlint restore <backup-dir>` replays it on any platform, and refuses to overwrite a path that exists again unless you pass `--force`.
 
 </details>
 
@@ -161,6 +197,22 @@ Loading mode is tracked per asset — `always`, `on_demand`, `conditional`, `def
 
 </details>
 
+<details>
+<summary><b>Commands</b></summary>
+
+<br>
+
+| Command | Writes anything? | What it is for |
+|---|:---:|---|
+| `contextlint audit` | no | the full report — terminal, JSON or HTML |
+| `contextlint watch` | history file only | the same audit on a schedule, reporting drift |
+| `contextlint fix` | no | print the plan for the safely-removable subset |
+| `contextlint fix --apply` | **yes** | apply it, behind a clean-git-tree guard, with a backup |
+| `contextlint restore` | **yes** | replay a backup, refusing to clobber |
+| `contextlint checks` | no | list the adapters and checks in this version |
+
+</details>
+
 ---
 
 ## Reproducing the numbers
@@ -177,7 +229,7 @@ uv run --no-project --with tiktoken python benchmarks/tune.py         # refit th
 |---|---|---|
 | Planted defects detected | **15 / 15** | `benchmarks/run.py` against `benchmarks/fixtures/bloated` |
 | Savings from automatic fixes | **14.0%** of always-on tokens | before/after audit of a fixture copy, real `fix` path |
-| Tests | **69**, on Linux/macOS/Windows × Python 3.10–3.13 | CI |
+| Tests | **109**, on Linux/macOS/Windows × Python 3.10–3.13 | CI |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/tokenizer-dark.svg">
@@ -211,6 +263,7 @@ Verified against the GitHub API, not taken from anyone's README.
 | MCP config security checks | ✅ | — | ✅ |
 | Measures live MCP tool-schema cost | ✅ | — | — |
 | Cross-assistant | ✅ **4** | — | n/a |
+| Scheduled health check with drift | ✅ | — | — |
 | Visual report | ✅ | — | — |
 | **Reproducible** benchmark harness | ✅ | — | — |
 | Separates certain from candidate savings | ✅ | — | — |

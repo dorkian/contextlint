@@ -1,6 +1,6 @@
 ---
 name: contextlint
-description: Audit this project's AI-assistant configuration for always-on token cost, never-invoked skills, duplicate or shadowed skills, and MCP security risk. Use when the user asks why their context window is full, why the assistant is slow or expensive, which skills are dead weight, whether their MCP servers are safe, or asks to clean up or audit .claude / .cursor / .github / AGENTS.md configuration.
+description: Audit this project's AI-assistant configuration for always-on token cost, never-invoked skills, duplicate or shadowed skills, and MCP security risk, or set up a recurring health check. Use when the user asks why their context window is full, why the assistant is slow or expensive, which skills are dead weight, whether their MCP servers are safe, whether their context has grown, or asks to clean up, audit or monitor .claude / .cursor / .github / AGENTS.md configuration.
 allowed-tools: Bash, Read
 ---
 
@@ -39,10 +39,25 @@ top three findings by severity, each with its concrete remediation.
 Do not report `candidate_tokens` and `certain_tokens` as one figure. Do not quote a percentage
 saving the user has not actually applied yet.
 
+## Recurring checks
+
+If the user wants this watched rather than answered once:
+
+```bash
+uvx contextlint watch --once --quiet   # one check with drift; put this in cron
+uvx contextlint watch --every 6h       # or keep it running in a terminal
+```
+
+`--once` is the right primitive when something else owns the scheduling — cron, launchd,
+systemd, a scheduled CI job. The history file makes the comparison work across separate
+invocations. Exit code is 1 only when the check fails; `--quiet` stays silent while healthy.
+Ready-made snippets live in `docs/scheduling.md` in the repository.
+
 ## Acting on it
 
 `contextlint fix` prints a plan and changes nothing. Show the plan and let the user decide.
-`contextlint fix --apply` needs a clean git tree and writes a backup with a `restore.sh`.
+`contextlint fix --apply` needs a clean git tree and writes a backup; `contextlint restore
+<backup-dir>` undoes it on any platform.
 
 For findings that are not auto-fixable — a skill with no frontmatter, an over-long description,
 a never-invoked skill — offer to edit the specific file. Never bulk-delete skills on the basis
