@@ -12,14 +12,18 @@ decides what to do about it.
 ## Run
 
 ```bash
-uvx --from git+https://github.com/dorkian/contextlint contextlint --format json
+uvx --from dorkian-context-lint contextlint --format json
 ```
 
 Add `--html /tmp/contextlint.html` when the user would benefit from the visual report (treemap
 of always-on cost, cost-against-usage scatter, filterable findings).
 
-Once installed with `uv tool install`, the command is simply `contextlint`. If neither is
-available, fall back to `python -m contextlint` from a checkout.
+The PyPI distribution name is `dorkian-context-lint` (the shorter `contextlint` was rejected at
+registration); the installed command is still `contextlint`. Once installed with `uv tool
+install dorkian-context-lint`, the command is simply `contextlint`. If neither is available,
+fall back to `PYTHONPATH=src python -m contextlint` from a checkout. Only reach for the
+`git+https://github.com/dorkian/contextlint` source form when you specifically need an
+unreleased commit — it builds from a clone every run and is often blocked in sandboxed agents.
 
 ## Reading the output
 
@@ -45,8 +49,8 @@ saving the user has not actually applied yet.
 If the user wants this watched rather than answered once:
 
 ```bash
-uvx --from git+https://github.com/dorkian/contextlint contextlint watch --once --quiet
-uv tool install git+https://github.com/dorkian/contextlint   # then just: contextlint watch --every 6h
+uvx --from dorkian-context-lint contextlint watch --once --quiet
+uv tool install dorkian-context-lint   # then just: contextlint watch --every 6h
 ```
 
 `--once` is the right primitive when something else owns the scheduling — cron, launchd,
