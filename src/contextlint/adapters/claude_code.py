@@ -114,8 +114,13 @@ class ClaudeCodeAdapter:
                 out.append(self._memory_asset(p, ws, CONDITIONAL))
 
         # The auto-memory index is injected every session; individual memory files
-        # are recalled on relevance.
-        mem_root = root / ".claude" / "projects"
+        # are recalled on relevance. Claude Code keeps them per project, under
+        # ~/.claude/projects/<slug>/memory, where <slug> is the project's absolute
+        # path with "/" and "." both turned into "-". Only the *current* project's
+        # memory is always-on for the current project — the sibling directories
+        # belong to every other repo the user has ever opened.
+        slug = str(ws.project).replace("/", "-").replace(".", "-")
+        mem_root = root / ".claude" / "projects" / slug
         if mem_root.is_dir():
             for p in walk_files(mem_root, "MEMORY.md", max_depth=4):
                 if p not in seen:

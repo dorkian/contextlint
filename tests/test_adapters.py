@@ -62,3 +62,31 @@ def test_missing_frontmatter_is_recorded_not_crashed(tmp_path):
     assert asset.meta["missing_frontmatter"] is True
     assert asset.name == "raw"
     assert "no frontmatter" in asset.always_on_text
+
+
+def test_only_the_current_projects_memory_index_is_always_on(tmp_path):
+    """~/.claude/projects/ holds a directory per project the user has ever opened.
+    Only the current project's MEMORY.md is injected into the current project's
+    sessions; the siblings belong to other repos."""
+    from contextlint.adapters.claude_code import ClaudeCodeAdapter
+    from contextlint.discovery import Workspace
+
+    home = tmp_path / "home"
+    project = home / "code" / "myproj"
+    project.mkdir(parents=True)
+    (project / "CLAUDE.md").write_text("project rules")
+
+    projects = home / ".claude" / "projects"
+    slug = str(project).replace("/", "-").replace(".", "-")
+    (projects / slug / "memory").mkdir(parents=True)
+    (projects / slug / "memory" / "MEMORY.md").write_text("- [a](a.md) mine")
+    (projects / "-Users-someone-vault" / "memory").mkdir(parents=True)
+    (projects / "-Users-someone-vault" / "memory" / "MEMORY.md").write_text("- [b](b.md) theirs")
+
+    ws = Workspace(project=project, home=home, include_global=True)
+    memory_files = {
+        str(a.path)
+        for a in ClaudeCodeAdapter().collect(ws)
+        if a.path and a.path.name == "MEMORY.md"
+    }
+    assert memory_files == {str(projects / slug / "memory" / "MEMORY.md")}
