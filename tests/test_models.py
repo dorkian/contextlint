@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from contextlint.models import CANDIDATE, CERTAIN, Asset, Finding, Report
+from contextlint.models import CANDIDATE, CERTAIN, Asset, Finding, Report, dedupe_assets
 
 
 def _asset(name, tokens):
@@ -50,6 +50,33 @@ def test_unknown_asset_ids_are_ignored():
                           at_stake_assets=["nope:nope:nope"], tokens_at_stake=9999)],
     )
     assert r.recoverable_tokens == 0
+
+
+def test_dedupe_collapses_one_file_read_by_several_assistants():
+    """AGENTS.md is one file on disk. Claude Code and Codex both read it, through
+    different adapters, so it must be counted and reported once — not once per
+    assistant."""
+    p = Path("/repo/AGENTS.md")
+    cc = Asset(assistant="claude_code", kind="memory", name="AGENTS.md", path=p)
+    cx = Asset(assistant="codex", kind="instruction", name="AGENTS.md", path=p)
+    cc.always_on_tokens = cx.always_on_tokens = 547
+
+    out = dedupe_assets([cc, cx])
+
+    assert len(out) == 1
+    assert sum(a.always_on_tokens for a in out) == 547
+    assert out[0].meta.get("also_loaded_by") == ["codex"]
+
+
+def test_dedupe_keeps_distinct_servers_from_one_config_file():
+    """One .mcp.json defines many servers that share a path but differ by name;
+    collapsing them would erase real cost."""
+    cfg = Path("/repo/.mcp.json")
+    servers = [
+        Asset(assistant="claude_code", kind="mcp_server", name=n, path=cfg)
+        for n in ("github", "linear", "sentry")
+    ]
+    assert len(dedupe_assets(servers)) == 3
 
 
 def test_json_round_trips():

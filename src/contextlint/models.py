@@ -241,8 +241,34 @@ def _jsonable(v: Any) -> bool:
 
 
 def dedupe_assets(assets: Iterable[Asset]) -> list[Asset]:
-    """Collapse assets that resolve to the same id, keeping the first seen."""
+    """Collapse assets that resolve to the same thing, keeping the first seen.
+
+    Two things collapse:
+
+    * an identical id — an adapter yielded the same asset twice;
+    * one file that several assistants read as the same logical asset. ``AGENTS.md``
+      is the common case: Claude Code, Codex and Cursor all inject the same bytes,
+      each through its own adapter. Counting it once per assistant inflates the
+      always-on floor and makes every downstream check emit a duplicate finding.
+      The survivor records the other consumers in ``meta['also_loaded_by']``.
+
+    MCP servers are exempt from the file-level merge: one ``.mcp.json`` legitimately
+    defines many servers that share a path but differ by name.
+    """
     out: dict[str, Asset] = {}
+    by_file: dict[tuple[str, str], str] = {}  # (path, name) -> id of the kept asset
     for a in assets:
-        out.setdefault(a.id, a)
+        if a.id in out:
+            continue
+        share_key = (str(a.path), a.name) if a.path and a.kind != "mcp_server" else None
+        if share_key is not None and share_key in by_file:
+            kept = out[by_file[share_key]]
+            if a.assistant != kept.assistant:
+                others = kept.meta.setdefault("also_loaded_by", [])
+                if a.assistant not in others:
+                    others.append(a.assistant)
+            continue
+        out[a.id] = a
+        if share_key is not None:
+            by_file[share_key] = a.id
     return list(out.values())
